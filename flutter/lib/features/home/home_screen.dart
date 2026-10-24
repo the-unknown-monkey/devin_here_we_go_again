@@ -7,6 +7,7 @@ import '../../core/api/models.dart';
 import '../baselines/confirmation_bar.dart';
 import '../goals/goals_screen.dart';
 import '../modes/mode_control.dart';
+import '../recaps/receipt_screen.dart';
 import '../timeline/timeline_view.dart';
 import '../vault/audio_player.dart';
 import '../vault/capture_sheet.dart';
@@ -133,6 +134,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Today'),
         actions: [
+          IconButton(
+            tooltip: 'Receipt',
+            icon: const Icon(Icons.receipt_long_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReceiptScreen(
+                    apiClient: widget.apiClient,
+                    date: DateTime.now(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Goals',
             icon: Badge(

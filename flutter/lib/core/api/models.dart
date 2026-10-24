@@ -130,3 +130,67 @@ class ModeIntervalItem {
   final DateTime? endedAt;
   final int? durationMin;
 }
+
+/// One insight line inside a Recap — always cites backend evidence ids.
+class RecapInsight {
+  const RecapInsight({required this.text, required this.evidenceEventIds});
+
+  factory RecapInsight.fromJson(Map<String, dynamic> json) => RecapInsight(
+    text: json['text'] as String? ?? '',
+    evidenceEventIds: (json['evidence_event_ids'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
+  );
+
+  final String text;
+  final List<String> evidenceEventIds;
+}
+
+/// `Recap` (contracts §2). `status` is GenerationStatus — GENERATED means
+/// the model output passed the deterministic fact guard; FALLBACK means
+/// the receipt was assembled purely from computed facts.
+class RecapItem {
+  const RecapItem({
+    required this.id,
+    required this.periodType,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.narrative,
+    required this.insights,
+    required this.highlightMediaIds,
+    this.directiveForNextCycle,
+    required this.status,
+    required this.createdAt,
+  });
+
+  factory RecapItem.fromJson(Map<String, dynamic> json) => RecapItem(
+    id: json['id'] as String,
+    periodType: json['period_type'] as String,
+    periodStart: DateTime.parse(json['period_start'] as String),
+    periodEnd: DateTime.parse(json['period_end'] as String),
+    narrative: json['narrative'] as String? ?? '',
+    insights: (json['insights'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(RecapInsight.fromJson)
+        .toList(),
+    highlightMediaIds: (json['highlight_media_ids'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
+    directiveForNextCycle: json['directive_for_next_cycle'] as String?,
+    status: json['status'] as String? ?? 'PENDING',
+    createdAt: DateTime.parse(json['created_at'] as String),
+  );
+
+  final String id;
+  final String periodType;
+  final DateTime periodStart;
+  final DateTime periodEnd;
+  final String narrative;
+  final List<RecapInsight> insights;
+  final List<String> highlightMediaIds;
+  final String? directiveForNextCycle;
+  final String status;
+  final DateTime createdAt;
+
+  bool get isFallback => status == 'FALLBACK';
+}

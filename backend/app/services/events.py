@@ -72,6 +72,8 @@ class EventService:
             event, _ = ModeService(self.session).transition(
                 user.id, payload.mode, payload.occurred_at, payload.idempotency_key
             )
+            self._mark_stale_recap(user, event.occurred_at)
+            self.session.commit()
             return event, True
 
         event = Event(
@@ -83,6 +85,7 @@ class EventService:
         )
         try:
             self.events.add(event)
+            self._mark_stale_recap(user, event.occurred_at)
             self.session.commit()
         except IntegrityError:
             # Racing duplicate tap lost the unique-constraint check — the
@@ -93,6 +96,12 @@ class EventService:
                 raise
             return existing, False
         return event, True
+
+    def _mark_stale_recap(self, user: User, occurred_at: datetime) -> None:
+        # Imported here to avoid a service import cycle.
+        from app.services.recaps import RecapService
+
+        RecapService(self.session).mark_stale_for_local_date(user, occurred_at)
 
     def window(
         self, user: User, start: datetime | None, end: datetime | None

@@ -254,6 +254,25 @@ class ApiClient {
   Future<GoalItem> retireGoal(String id) async =>
       GoalItem.fromJson(await _post('/goals/$id/retire', const {}));
 
+  /// GET /recaps — the stored (or freshly generated) receipt for a local
+  /// date. Returns null when the period honestly has no receipt (404).
+  Future<RecapItem?> getRecap({String period = 'DAILY', DateTime? date}) async {
+    final query = <String, String>{
+      'period': period,
+      if (date != null) 'date': date.toIso8601String().substring(0, 10),
+    };
+    try {
+      final body = await _get(
+        '/recaps?${Uri(queryParameters: query).query}',
+        authenticated: true,
+      );
+      return RecapItem.fromJson(body);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> _get(
     String path, {
     required bool authenticated,

@@ -112,6 +112,9 @@ class MediaService:
                     idempotency_key=f"media:{asset.id}",
                 )
             )
+            from app.services.recaps import RecapService
+
+            RecapService(self.session).mark_stale_for_local_date(user, asset.captured_at)
             self.session.commit()
         except Exception:
             # Never leave orphaned bytes when the metadata row fails.
