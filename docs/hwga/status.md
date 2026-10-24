@@ -3,8 +3,8 @@
 - **Project:** Here We Go Again (HWGA)
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
-- **Last inspected HEAD:** `e126791` (`feat(hwga): implement daily aggregation and grounded nightly receipt (HWGA06)`)
-- **Overall Progress:** 7 / 9 V1 phases completed
+- **Last inspected HEAD:** `599c43a` (`feat(hwga): implement morning directive and weekly recap chain (HWGA07)`)
+- **Overall Progress:** 8 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -49,7 +49,7 @@
 | **HWGA04** | Baselines & Rule of 3 | [x] Completed | 27 passed, 0 failed (`cd backend && uv run pytest tests/test_events.py tests/test_modes.py tests/test_goals.py -q -ra`); full backend 40 passed; Flutter: format clean, `No issues found!`, 18 passed | 2026-10-25 | `f24912b` | HWGA05 |
 | **HWGA05** | Sensory Moment Vault | [x] Completed | 15 passed, 0 failed (`cd backend && uv run pytest tests/test_media.py -q -ra`); full backend 55 passed; Flutter: format clean, `No issues found!`, 24 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `a066c41` | HWGA06 |
 | **HWGA06** | Nightly Receipt | [x] Completed | 20 passed, 0 failed (`cd backend && uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra`); full backend 75 passed; Flutter: format clean, `No issues found!`, 29 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `e126791` | HWGA07 |
-| **HWGA07** | Morning Directive & recap chain | [ ] Planned | | | | HWGA08 |
+| **HWGA07** | Morning Directive & recap chain | [x] Completed | 22 passed, 0 failed (`cd backend && uv run pytest tests/test_directive.py tests/test_weekly_recap.py -q -ra`); full backend 97 passed; Flutter: format clean, `No issues found!`, 35 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `599c43a` | HWGA08 |
 | **HWGA08** | Final V1 acceptance & phone demo | [ ] Planned | | | | Done |
 | **Post-V1** | Refinement & feature discovery | Deferred | | | | — |
 
@@ -214,9 +214,31 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - VOICE STT (the single approved raw-media exception, contracts §4) still not wired — PENDING clips contribute no transcript; `MANUAL_TEXT` works.
   - `GET /recaps` generates on first fetch (documented in router); a scheduler-triggered nightly run is the intended `POST /internal/run/daily` path — APScheduler wiring remains open (D21).
   - Fact guard quantity checks cover known fact nouns; novel nouns are unchecked but every insight still requires valid evidence ids and the narrative still passes mode/date/goal/shame checks.
-### Phase HWGA07 — _pending_
+### Phase HWGA07: Morning Directive & Recap Chain
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `599c43a` (`feat(hwga): implement morning directive and weekly recap chain (HWGA07)`)
+- **Test results:** backend named tests `22 passed, 0 failed` (`cd backend && uv run pytest tests/test_directive.py tests/test_weekly_recap.py -q -ra`); full suite `97 passed` (`uv run pytest tests -q -ra`). Flutter `35 passed, 0 failed`; `dart format --set-exit-if-changed lib test` clean (0 changed); `flutter analyze` → `No issues found!` (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`).
+- **Pre-flight observed state:** branch `main`, clean tree; `docker compose ps` showed `backend-db-1` + `backend-db-test-1` already running.
+- **Findings / deliverables:**
+  - `app/agents/schemas/context.py` — typed provider inputs `DirectiveContext`/`WeeklyContext`/`RecapRef` (internal, not contract): weekly input is built ONLY from stored DAILY recap objects + active goals; each RecapRef carries the evidence-id and media-id unions from its persisted insights.
+  - `app/agents/prompts/{directive,weekly}.py`, `schemas/directive.py` (DirectiveCandidate), provider gains `generate_weekly`/`generate_directive` via one generic timeout/retry/structured-output call. NarrativeProvider protocol extended — test fakes stay structural.
+  - `app/agents/chain_guard.py` — weekly guard (insights ⊆ evidence union, highlights ⊆ media union, every number must equal coverage or appear verbatim in a source recap, shame/coercion reject) + directive guard (one line ≤300, no shame/coercion, digits must appear in a goal title or the source recap text) + deterministic fallbacks for both.
+  - `app/agents/graphs/morning_directive.py` + `graphs/weekly_recap.py` — same linear LangGraph shape as the daily receipt; idempotent persists on `(user_id, for_date)` and `(user_id, WEEKLY, week_start)`; weekly rows record `source_recap_ids`.
+  - `app/services/directives.py` — `GET /directive/today` generates on first open, sets `shown_at` once (display dedupe); new `api/routers/directive.py` wired in `main.py`.
+  - `app/services/weekly_context.py` — ISO week (Mon–Sun) window in `users.timezone`; expected days = elapsed days only (future days are not "missing"); `missing_dates` = expected days with no stored receipt.
+  - `app/services/recaps.py` — `GET /recaps?period=WEEKLY&date=` maps any date to its week; regenerates once under the same period key when a source daily is stale/newer or the source set changed. `POST /internal/run/weekly` enabled; `monthly`/`yearly` still honest 404s. MONTHLY/YEARLY remain contract-only.
+  - `RecapRepository` gains `list_daily_between`, `latest_daily_before` (non-stale), `recent_dailies`.
+  - Flutter: `DirectiveItem` + `RecapItem.sourceRecapIds` models, `ApiClient.getDirectiveToday`, `features/recaps/directive_card.dart` (GENERATED "Today" vs FALLBACK "A simple nudge", loading/error-retry/empty states, AnimatedSwitcher), `chronology_screen.dart` (weekly recap + receipt count + per-day chips to ReceiptScreen + highlight media via authenticated ids), shared `highlight_tile.dart` extracted from receipt_screen, HomeScreen gains the card + week nav. `test/recap_chain_test.dart` covers all states.
+  - Existing contract fix: `test_recap_workflow.py` weekly-404 test updated — WEEKLY now generates; MONTHLY/YEARLY assertions kept.
+- **Deviations / decisions needing follow-up:**
+  - Test-only fix: em-dash in mocked JSON needed `Response.bytes` + explicit `charset=utf-8` — `http.Response` defaults to latin-1. Backend responses are real UTF-8; the app client already decodes UTF-8 correctly in production paths.
+  - A stale DAILY recap still counts as a weekly source (its stored narrative is used as-is) — deterministic V1 choice; HWGA08 can revisit whether stale days should read as missing instead.
+- **Limitations / unresolved:**
+  - Gemini path never executed live (no `GEMINI_API_KEY` in test env); all provider seams mocked — real-model quality verified only at HWGA08.
+  - VOICE STT still not wired; APScheduler (D21) trigger still manual via `/internal/run/*`.
+  - In-app directive card renders only on HomeScreen open — no FCM/push per D05.
 ### Phase HWGA08 — _pending_
-
 <!-- Evidence entry template:
 ### Phase HWGAnn: <name>
 - **Status:** [x] Completed / [ ] Blocked
