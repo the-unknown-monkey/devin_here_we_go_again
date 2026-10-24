@@ -43,7 +43,7 @@
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
 | **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | `3fd66ff` | HWGA01 |
-| **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `<pending>` | HWGA02 |
+| **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `fe7f8cd` | HWGA02 |
 | **HWGA02** | Backend foundation | [ ] Planned | | | | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [ ] Planned | | | | HWGA05 |
