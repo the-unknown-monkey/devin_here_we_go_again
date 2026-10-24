@@ -39,7 +39,7 @@ The data model and architecture must support Daily, Weekly, Monthly, and Yearly 
 - Local hackathon persistence: Postgres in Docker; media stored on local disk behind authenticated backend routes.
 - Morning Directive delivery: in-app for V1. Firebase Cloud Messaging is deferred.
 - Demo access: ngrok on Windows 11 may expose the authenticated FastAPI HTTP port only. Never tunnel Postgres, the Docker daemon, or an unauthenticated debug interface.
-- Single-user product/auth scope: no public registration or social graph. HWGA01 must select the concrete local authentication mechanism and record its threat assumptions.
+- Single-user product/auth scope: no public registration or social graph. **Locked (HWGA01, D07):** single-user bearer token on every route except `/health`; provisioned by a backend bootstrap CLI (stored hashed in DB, not env); ngrok ingress treated as hostile — auth mandatory with the tunnel active.
 - UI baseline: clean, minimal, modern, coherent; intentional icons and transitions/animations. Defer major visual redesign until full V1 acceptance on the phone.
 - Source roots: `flutter/` and `backend/`. At the documentation baseline, both names are zero-byte files, not directories. HWGA02 replaces `backend` and HWGA03 replaces `flutter`, each as explicitly authorized by the user.
 
@@ -53,7 +53,7 @@ Capture user-confirmed water, food, stretching, posture resets, walking, and qui
 
 ### 3.2 Rule of 3
 
-- At most three active goals per user, enforced transactionally by the backend.
+- At most three active goals per user, enforced by a serialized transaction (per-user row lock + `ACTIVE` count check, `409 GOAL_CAP_REACHED` at 3) — locked in HWGA01 (D14).
 - Each item has a stable id, creation time, title, and `ACTIVE`, `COMPLETED`, or `RETIRED` state.
 - Compute visible age from timestamps and the user's configured timezone; never store a mutable "age in days" counter.
 - Adding a fourth active item must fail with a clear, typed response until an active item is completed or retired.
@@ -129,12 +129,12 @@ Require structured output (Pydantic/JSON schema), explicit evidence references w
 
 1. HWGA is private by design. No social graph, public share endpoint, analytics ad SDK, or third-party visibility.
 2. Gemini keys, auth secrets, and ngrok tokens belong in local environment/secret storage only; never in source, prompts, status docs, screenshots, or commits.
-3. Do not send raw media to Gemini by default. Send only transcripts/metadata/selected excerpts needed for the approved feature; any media transmission requires an explicit decision and consent flow.
+3. Do not send raw media to Gemini. **Locked exception (HWGA01, D19):** VOICE audio bytes may be sent to the Gemini API solely for speech-to-text; only the transcript enters the pipeline, with a `MANUAL_TEXT` fallback. IMAGE and AUDIO bytes are never sent. Any further media transmission requires an explicit decision and consent flow.
 4. Treat tunnels as public ingress. Require authentication, validate inputs, cap upload size/duration, and never enable permissive debug/CORS settings for a demo.
 5. Use separate disposable test data and test DB configuration. Never point automated tests at a user's real dataset or a production target.
 6. Keep operations idempotent and safe under retries, duplicate taps, app restarts, and model timeouts.
 7. Missing data is unknown, not a negative. Do not infer that an unlogged stretch, meal, or rest period did not happen.
-8. Provide clear delete paths for events/goals/media and define local media retention before acceptance.
+8. Provide clear delete paths for events/goals/media. **Locked (HWGA01, D18):** IMAGE ≤10MB (jpg/png/webp); AUDIO+VOICE ≤60s/≤15MB (m4a/aac/mp3/wav); manual user delete only, no auto-expiry in V1.
 
 ## 7. UI/UX Constraints
 
@@ -180,6 +180,7 @@ Verified facts about the actual code/environment, recorded as they are discovere
 | Docker | Client + engine 29.1.2; disposable `postgres:17-alpine` on `127.0.0.1` verified (PostgreSQL 17.7). Docker Desktop may wedge in `stopped` state — kill `Docker Desktop`/`com.docker.*` processes and relaunch | HWGA00 |
 | Device | Nothing Phone 2a = serial `000563429001789`, `model:A142`, `product:PacmanIND`, authorized `device`; `adb reverse tcp:<port> tcp:<port>` confirmed — dev route is USB reverse, phone uses `http://localhost:<port>` | HWGA00 |
 | ngrok | 3.39.11-msix on PATH; authtoken stored at `%LOCALAPPDATA%\ngrok\ngrok.yml` (config check valid). Fortinet TLS interception on the normal network blocked the dashboard — hotspot workaround used; possible demo-time tunnel risk | HWGA00 |
+| Locked config | API port **8000** (`127.0.0.1` bind, `adb reverse tcp:8000 tcp:8000`); dev Postgres host port **55432**, disposable test Postgres **55433**; locks = `uv.lock` + `pubspec.lock`; ORM = SQLAlchemy 2.x + Alembic; scheduler = APScheduler | HWGA01 |
 
 ## 10. Verification Policy
 

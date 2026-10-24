@@ -41,7 +41,7 @@ Local backend starts with documented config; `/health` responds; migration appli
 cd backend
 uv sync
 uv run pytest tests -q -ra
-uv run uvicorn app.main:app --port <HWGA01-port>   # then curl http://127.0.0.1:<port>/health
+uv run uvicorn app.main:app --port 8000   # then curl http://127.0.0.1:8000/health
 ```
 
 ## 7. Phase Completion & Git Protocol (Two-Step)
@@ -80,7 +80,7 @@ Use Python 3.13 and the dependency/migration/auth choices locked in HWGA01 (cont
 
 Add only focused foundation tests and run:
   cd backend && uv sync && uv run pytest tests -q -ra
-Then verify /health via uvicorn on the HWGA01 port. Report exact command output, results, failures/skips, files changed, and any migration or security caveats. A check that was not run counts as failed.
+Then verify /health via uvicorn on port 8000 (locked HWGA01). Report exact command output, results, failures/skips, files changed, and any migration or security caveats. A check that was not run counts as failed.
 
 Finish with the Two-Step Commit Protocol exactly as written in the phase file (implementation commit → hash → status.md docs commit → git push origin main). Report both commit hashes. Stop before HWGA03.
 ```

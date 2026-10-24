@@ -120,8 +120,10 @@ Minimum readiness criteria:
 
 ## 5. Local Runtime and Data Boundaries
 
-- Run FastAPI locally on a documented loopback port; HWGA01 locks the port and configuration format.
-- Run Postgres in Docker with a named volume for local development and a separate disposable test database/container.
+- **Locked (HWGA01):** FastAPI binds `127.0.0.1:8000`; the phone reaches it via `adb reverse tcp:8000 tcp:8000`. Config comes from `backend/.env` (pydantic-settings); only `.env.example` is committed.
+- Run Postgres in Docker with a named volume for local development on host port **55432**, and a separate disposable test database/container on host port **55433** (locked HWGA01); tests never point at the dev DB.
+- **Locked environment variable names** (names only — values never committed): `DATABASE_URL`, `TEST_DATABASE_URL`, `MEDIA_STORAGE_ROOT`, `GEMINI_API_KEY`, `USER_TIMEZONE` (default `Asia/Kolkata`), `AUTH_TOKEN_PEPPER` (hashing secret for the bootstrap-CLI-issued bearer token), `SCHEDULER_ENABLED`.
+- **Locked backend libraries:** SQLAlchemy 2.x + Alembic (ORM/migrations, D17), APScheduler (in-process nightly receipt job, D21), pydantic-settings; exact versions come from `uv.lock` at scaffold time (D16).
 - Store media under an ignored backend-owned data root. Persist opaque relative keys and metadata, never client-supplied paths.
 - The phone reaches a local server via a verified development route (USB reverse or ngrok). Do not assume `localhost` on the Android phone is the Windows host.
 - Expose only the backend route through ngrok; bind database access to local-only networks.
@@ -154,9 +156,9 @@ Exact commands get pinned when each layer exists; until then phases must not inv
 | Flutter analyze | `cd flutter && dart format --set-exit-if-changed lib test && flutter analyze` | — |
 | Flutter widget tests | `flutter test` | — |
 | Flutter device build | `flutter run -d <nothing-phone-id>` | Nothing Phone 2a via `adb devices` |
-| Health check | `curl http://127.0.0.1:<port>/health` | port locked in HWGA01 |
+| Health check | `curl http://127.0.0.1:8000/health` | port locked HWGA01: 8000 |
 
-Test isolation rules: the disposable test database/container is separate from the dev database; tests never point at a user's real dataset; the disposable Postgres host port is assigned in HWGA01/HWGA02 and recorded in `status.md`.
+Test isolation rules: the disposable test database/container is separate from the dev database; tests never point at a user's real dataset. Locked in HWGA01: dev Postgres on host port **55432**, disposable test Postgres on host port **55433**.
 
 ## 8. Phase-Level Test Harness vs. Final Acceptance
 

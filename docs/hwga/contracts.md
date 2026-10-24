@@ -2,7 +2,7 @@
 
 - **Document ID:** CONTRACTS-HWGA
 - **Project:** Here We Go Again (HWGA)
-- **Status:** **DRAFT** — seeded for consistency; locked by HWGA01 and then frozen for V1
+- **Status:** **LOCKED (HWGA01, 2026-10-25)** — frozen for V1; changes require explicit user approval recorded in `status.md`
 - **Authority:** This file is the ONLY authoritative definition of enums, typed models, API shapes, and error formats. `here_we_go_again.md` §7–8 and any JSON examples elsewhere are illustrative drafts; if they disagree with this file, this file wins and the other doc must be corrected.
 
 ---
@@ -61,9 +61,9 @@ class GenerationStatus(str, Enum):
     FAILED = "FAILED"                # observable failure; never silent
 ```
 
-## 2. Typed Models (Pydantic sketches — lock in HWGA01)
+## 2. Typed Models (Pydantic)
 
-These sketches pin names, types, and ownership. HWGA01 may refine field details but may not rename without updating this file.
+These models are the locked V1 shapes. They may not be renamed or reshaped without an approved scope change recorded in `status.md`.
 
 ```python
 from datetime import date, datetime
@@ -161,11 +161,14 @@ class MorningDirective(BaseModel):
 | `POST` | `/internal/run/{daily\|weekly}` | authenticated job trigger | local MVP; no public exposure |
 | `GET` | `/health` | liveness | unauthenticated, no data |
 
-## 4. Cross-Cutting Rules
+## 4. Cross-Cutting Rules (Locked HWGA01)
 
-- **Time:** all persisted timestamps UTC; all period windows computed in `users.timezone` (IANA). Mode durations are derived from transitions by deterministic code only.
-- **Idempotency:** `EventIn.idempotency_key` is unique per user; recap/directive generation is unique on `(user_id, period_type, period_start)` / `(user_id, for_date)`.
-- **Rule of 3 enforcement:** database-level constraint (decision D-pending in HWGA01), not client-side.
-- **Media:** client never sees `storage_key` or filesystem paths; media served only via authenticated `/media/{id}`.
-- **Errors:** every error response uses `ErrorResponse`; auth failures are `401`, ownership violations `403`/`404` (no existence leaks), validation `422`, cap/limit `409`/`413`.
-- **Gemini boundary:** Gemini receives `DailyContext` (or stored recap objects for weekly) only — no raw media, no event history dumps, no database access.
+- **Auth:** single-user bearer token (`Authorization: Bearer <token>`) on every route except `GET /health`. Token is provisioned by a backend bootstrap CLI into the database (hashed at rest), not an env var; rotate by re-running the CLI and re-entering the token on the phone. Threat assumption: private single-user app; ngrok ingress is treated as hostile, so auth is mandatory with the tunnel active.
+- **Time:** all persisted timestamps UTC; all period windows computed in `users.timezone` (IANA; default `Asia/Kolkata`, editable). Events arriving after a period closed are backfilled via `occurred_at` into the period they belong to; an already-generated recap for that period is marked stale and regenerated once on next fetch under the same idempotency key. Mode durations are derived from transitions by deterministic code only.
+- **Idempotency:** `EventIn.idempotency_key` is unique per user; recap/directive generation is unique on `(user_id, period_type, period_start)` / `(user_id, for_date)`. Retries and duplicate taps never create duplicates.
+- **Rule of 3 enforcement:** serialized transaction — the service takes a per-user lock (`SELECT ... FOR UPDATE` on the user row), counts `ACTIVE` goals, and rejects the insert with `409 GOAL_CAP_REACHED` if the count is 3. Not client-side.
+- **Media limits (V1):** IMAGE ≤ 10 MB, MIME `image/jpeg|image/png|image/webp`; AUDIO and VOICE ≤ 60 s and ≤ 15 MB, MIME `audio/mp4 (m4a)|audio/aac|audio/mpeg|audio/wav`. Ambient capsules are prompted at 5–10 s in UX but the server cap is 60 s. Retention: user deletes manually; no auto-expiry in V1. Violations return `413 MEDIA_LIMIT_EXCEEDED` / `422 UNSUPPORTED_MEDIA_TYPE`. Client never sees `storage_key` or filesystem paths; media served only via authenticated `/media/{id}`.
+- **Errors:** every error response uses `ErrorResponse`; auth failures `401`, ownership violations `403`/`404` (no existence leaks), validation `422`, goal cap `409`, upload limits `413`. Known codes: `GOAL_CAP_REACHED`, `MEDIA_LIMIT_EXCEEDED`, `UNSUPPORTED_MEDIA_TYPE`, `INVALID_MODE_TRANSITION`, `UNAUTHORIZED`, `NOT_FOUND`, `VALIDATION_ERROR`, `GENERATION_FAILED`.
+- **Missing data:** missing = unknown, not negative. `DailyContext` omits unlogged kinds; the narrative must never assert something did not happen.
+- **Generation retry/fallback:** Gemini calls are timeout-bounded with at most 2 retries; on exhaustion a deterministic fallback receipt is persisted with `status=FALLBACK`. `FAILED` is only for observable persistence errors — never silent.
+- **Gemini boundary:** Gemini receives `DailyContext` (or stored recap objects for weekly) only — no raw media, no event history dumps, no database access. **Single approved exception:** VOICE audio bytes may be sent to the Gemini API solely for speech-to-text; only the transcript enters `DailyContext`. No IMAGE or AUDIO bytes are ever sent.

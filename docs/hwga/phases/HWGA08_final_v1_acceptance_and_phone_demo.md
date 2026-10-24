@@ -41,7 +41,7 @@ Only after tests and live phone/demo checks succeed, and after the user confirms
 cd backend && uv run pytest tests -q -ra
 cd ..\flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test && flutter build apk --debug
 adb devices
-ngrok http <HWGA01-port>   # only after user approval, auth confirmed
+ngrok http 8000   # only after user approval, auth confirmed
 ```
 
 ## 6. Exit Criteria

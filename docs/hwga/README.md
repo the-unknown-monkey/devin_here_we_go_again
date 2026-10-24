@@ -25,7 +25,7 @@ This documentation set is the source of truth for the **Here We Go Again (HWGA)*
 | Phase | Objective | Status |
 |---|---|---|
 | [HWGA00](phases/HWGA00_environment_setup_and_wiring.md) | Check, install with approval, and verify the Windows/Android development environment | Completed |
-| [HWGA01](phases/HWGA01_decisions_and_contracts.md) | Freeze V1 decisions and typed contracts | Planned |
+| [HWGA01](phases/HWGA01_decisions_and_contracts.md) | Freeze V1 decisions and typed contracts | Completed |
 | [HWGA02](phases/HWGA02_backend_foundation.md) | Establish FastAPI, Postgres, migrations, auth, and isolated test infrastructure | Planned |
 | [HWGA03](phases/HWGA03_flutter_foundation_and_connection.md) | Establish Flutter app structure and authenticated phone-to-API connection | Planned |
 | [HWGA04](phases/HWGA04_daily_baselines_and_rule_of_three.md) | Implement daily check-ins, modes, timeline, and Rule of 3 | Planned |

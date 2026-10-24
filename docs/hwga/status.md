@@ -4,7 +4,7 @@
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
 - **Last inspected HEAD:** `6b5be03` (`new docs`)
-- **Overall Progress:** 0 / 9 V1 phases completed
+- **Overall Progress:** 2 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -19,23 +19,31 @@
 | **D04** | Demo transport? | ngrok on Windows 11; authenticated API only, never Postgres | Confirmed by user |
 | **D05** | Directive delivery? | In-app first; FCM deferred | Confirmed by user |
 | **D06** | Audience/UI? | People ~20-35 years old; clean modern baseline, redesign post-acceptance | Confirmed by user |
-| **D07** | Auth mechanism? | Single-user private auth; exact mechanism/token/provisioning **open — lock in HWGA01** | Partially decided |
+| **D07** | Auth mechanism? | Single-user bearer token (`Authorization: Bearer <token>`) on all routes except `/health`. Provisioned by a backend bootstrap CLI that stores the token hashed in the DB; rotate by re-running the CLI and re-entering on the phone. Threat assumption: ngrok ingress is hostile; auth mandatory with tunnel active | Approved HWGA01 (user) |
 | **D08** | Python version? | 3.13 (observed 3.13.11); `py` defaults to 3.14 — select explicitly | Proposed; verify HWGA00 |
-| **D09** | Recap scope? | Daily loop + weekly roll-up in V1; monthly/yearly deferred | Proposed for HWGA01 confirmation |
+| **D09** | Recap scope? | Daily receipt + weekly roll-up in V1; monthly/yearly contract-only, generation post-V1 | Confirmed HWGA01 (user) |
 | **D10** | Source placeholders? | Replace zero-byte `backend`/`flutter` files with directories in HWGA02/HWGA03 | User authorized |
-| **D11** | Test timing? | Full campaign at HWGA08; named phase-local checks required | Confirm interpretation HWGA01 |
+| **D11** | Test timing? | Full campaign at HWGA08; named phase-local checks required | Confirmed HWGA01 |
 | **D12** | Commit policy? | Two-Step Commit Protocol per phase on `main`, push each phase | See §3 below |
-| **D13** | Contracts? | `docs/hwga/contracts.md` is the single authority for enums/models/API | Seeded; locked in HWGA01 |
-| **D14** | Rule-of-3 enforcement? | **Open — HWGA01** must pick DB mechanism (e.g. partial unique index) | Prevents silent choice in HWGA04 |
-| **D15** | Phone↔host route? | `adb reverse tcp:<port> tcp:<port>` over USB for development — verified working on Nothing Phone 2a (`UsbFfs tcp:8000 tcp:8000` listed). Phone reaches backend at `http://localhost:<port>`; ngrok reserved for demos only | Verified HWGA00 |
-| **D16** | Dependency pinning? | **Open — HWGA01** lock strategy (`uv.lock`, `pubspec.lock`); no mid-phase upgrades | Prevents version drift hallucination |
+| **D13** | Contracts? | `docs/hwga/contracts.md` is the single authority for enums/models/API | **LOCKED HWGA01 (2026-10-25)** |
+| **D14** | Rule-of-3 enforcement? | Serialized transaction: per-user lock (`SELECT ... FOR UPDATE` on user row) + count of `ACTIVE` goals; insert rejected `409 GOAL_CAP_REACHED` at 3 | Approved HWGA01 (user) |
+| **D15** | Phone↔host route? | `adb reverse tcp:8000 tcp:8000` over USB — verified HWGA00 (`UsbFfs tcp:8000 tcp:8000` listed). **API port locked: 8000**, FastAPI bound `127.0.0.1`; config via `backend/.env` (pydantic-settings), `.env.example` committed. ngrok reserved for demos only | Locked HWGA01 |
+| **D16** | Dependency pinning? | `uv.lock` committed for backend (uv 0.11.13); `pubspec.lock` committed for Flutter; no mid-phase upgrades | Approved HWGA01 (user) |
+| **D17** | ORM/migrations/test DB? | SQLAlchemy 2.x + Alembic; dev Postgres on host port **55432**, disposable test Postgres on **55433**; tests never touch dev data | Approved HWGA01 (user) |
+| **D18** | Media limits/retention? | IMAGE ≤10MB jpg/png/webp; AUDIO+VOICE ≤60s, ≤15MB m4a/aac/mp3/wav (ambient prompted 5–10s in UX); manual user delete only, no auto-expiry | Approved HWGA01 (user) |
+| **D19** | Voice transcription? | Server-side Gemini API STT for VOICE clips — the **only** approved media→Gemini exception (transcript only enters `DailyContext`); `MANUAL_TEXT` fallback on failure; no IMAGE/AUDIO bytes ever sent | Approved HWGA01 (user) |
+| **D20** | Timezone/late events? | `users.timezone` IANA, default `Asia/Kolkata`, editable; late events backfilled via `occurred_at`; affected recap marked stale, regenerated once on next fetch (same period key) | Approved HWGA01 (user) |
+| **D21** | Daily receipt trigger? | In-process APScheduler nightly job at user-local evening + manual `POST /internal/run/daily`; idempotent on `(user_id, period_type, period_start)` | Approved HWGA01 (user) |
+| **D22** | Gemini failure policy? | Timeout-bounded, ≤2 retries → deterministic fallback persisted as `FALLBACK`; `FAILED` only for observable persistence errors, never silent | Approved HWGA01 (user) |
+| **D23** | Missing-data policy? | Missing = unknown, not negative; `DailyContext` omits unlogged kinds; narrative never asserts non-occurrence | Approved HWGA01 (user) |
+| **D24** | V1 UI baseline? | Material 3 theme, material_icons, standard page transitions + AnimatedSwitcher/implicit animations for capture confirm/mode change/recap reveal; no extra animation packages in V1 | Approved HWGA01 (user) |
 
 ## 2. Phase Status Ledger
 
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
 | **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | `3fd66ff` | HWGA01 |
-| **HWGA01** | Decisions & contracts | [ ] Planned | — | | | HWGA02 |
+| **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `<pending>` | HWGA02 |
 | **HWGA02** | Backend foundation | [ ] Planned | | | | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [ ] Planned | | | | HWGA05 |
@@ -87,7 +95,17 @@ For each completed phase record: execution date/time + timezone, branch, startin
 - **Limitations / unresolved:**
   - VS Build Tools incomplete (Windows-desktop builds only; non-blocking).
   - Fortinet may interfere with ngrok tunneling at demo time — monitor in HWGA08.
-### Phase HWGA01 — _pending_
+### Phase HWGA01: Decisions & contracts
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** recorded after docs commit (see §2)
+- **Test results:** docs-only phase; consistency/link/schema validation by inspection — no code checks applicable
+- **Findings / deliverables:**
+  - Resolved via explicit user answers: D07 (bearer token + bootstrap CLI), D09 (Daily+Weekly V1), D11, D13 (contracts locked), D14 (serialized txn + count), D15 (port 8000 + `.env`), D16 (`uv.lock` + `pubspec.lock`), plus new D17–D24 (ORM/ports, media limits, Gemini STT exception, timezone/late events, APScheduler trigger, retry→FALLBACK, missing-data policy, M3 UI baseline).
+  - `contracts.md` DRAFT removed; §4 rewritten with locked auth, media, idempotency, error, missing-data, retry, and Gemini-boundary rules (incl. the single VOICE→Gemini STT exception).
+  - `implementation.md` pinned: ports 8000/55432/55433, env var names, SQLAlchemy+Alembic+APScheduler.
+  - Phase files HWGA02/HWGA08: `<HWGA01-port>` placeholders → `8000`.
+- **Limitations / unresolved:** none blocking HWGA02.
 ### Phase HWGA02 — _pending_
 ### Phase HWGA03 — _pending_
 ### Phase HWGA04 — _pending_

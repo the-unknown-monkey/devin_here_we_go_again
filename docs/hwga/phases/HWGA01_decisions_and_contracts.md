@@ -3,7 +3,7 @@
 - **Phase ID:** HWGA01
 - **Title:** Product Decisions, Data Contracts & V1 Freeze
 - **Branch:** `main`
-- **Status:** Planned (0 / 9 completed)
+- **Status:** Completed (2 / 9 completed)
 - **Dependency:** HWGA00 environment readiness
 - **Next Phase:** HWGA02
 - **Scope:** Confirm open requirements and lock authoritative contracts; no feature implementation
