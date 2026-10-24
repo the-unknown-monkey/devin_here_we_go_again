@@ -4,7 +4,7 @@
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
 - **Last inspected HEAD:** `6b5be03` (`new docs`)
-- **Overall Progress:** 2 / 9 V1 phases completed
+- **Overall Progress:** 3 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -44,7 +44,7 @@
 |---|---|---|---|---|---|---|
 | **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | `3fd66ff` | HWGA01 |
 | **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `fe7f8cd` | HWGA02 |
-| **HWGA02** | Backend foundation | [ ] Planned | | | | HWGA03 |
+| **HWGA02** | Backend foundation | [x] Completed | 11 passed, 0 failed, 0 skipped (`cd backend && uv run pytest tests -q -ra`) | 2026-10-25 | `9551e0d` | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [ ] Planned | | | | HWGA05 |
 | **HWGA05** | Sensory Moment Vault | [ ] Planned | | | | HWGA06 |
@@ -106,7 +106,27 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - `implementation.md` pinned: ports 8000/55432/55433, env var names, SQLAlchemy+Alembic+APScheduler.
   - Phase files HWGA02/HWGA08: `<HWGA01-port>` placeholders → `8000`.
 - **Limitations / unresolved:** none blocking HWGA02.
-### Phase HWGA02 — _pending_
+### Phase HWGA02: FastAPI, Database & Backend Foundation
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `9551e0d` (`feat(hwga): scaffold FastAPI backend, Postgres, auth, isolated tests (HWGA02)`)
+- **Test results:** 11 passed, 0 failed, 0 skipped, 0 warnings (`cd backend && uv run pytest tests -q -ra`)
+- **Commands run + observed output:**
+  - `uv sync` → resolved + locked all deps (uv.lock committed); key versions: fastapi, starlette 1.10.0, uvicorn 0.54.0, sqlalchemy 2.1.6, alembic, psycopg[binary], pydantic-settings 2.16.1, apscheduler 3.x, pytest 8.4.2, httpx2 2.16.0.
+  - `docker compose up -d db-test` → `backend-db-test-1` healthy, `pg_isready` accepting connections (tmpfs/disposable).
+  - `alembic revision --autogenerate` against the empty test DB → `migrations/versions/5e1d2551dffb_initial_schema.py` (users, auth_tokens, events, mode_intervals, goals, media_assets, recaps, morning_directives + uniqueness constraints).
+  - `uv run pytest tests -q -ra` → `11 passed in 0.37s` (health, auth reject/accept, migration-on-test-DB, secret redaction, settings isolation, timezone validation).
+  - `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000` + `curl http://127.0.0.1:8000/health` → `{"status":"ok"}` HTTP 200; server then stopped.
+- **Findings / deliverables:**
+  - `backend/` created: pyproject + uv.lock (Python 3.13 pin `>=3.13,<3.14`), `.env.example` (locked var names only), `.gitignore`, `app/main.py` app factory, `app/core/` (pydantic-settings config w/ IANA-timezone + test-DB-isolation validation; JSON logging with bearer/secret redaction filter), `app/api/routers/health.py`, `app/db/` (session dep, ORM models for all contracts §2 entities, repositories), `app/storage/local.py` (media adapter scaffold: path confinement, server-generated keys, D18 limits; no static mount), `app/cli.py provision-token` (HMAC-SHA256+pepper hash stored in `auth_tokens`, plaintext shown once), `docker-compose.yml` (dev `db` + tmpfs `db-test`, ports bound to 127.0.0.1 only), Alembic (`alembic.ini`, `migrations/env.py`, initial revision `5e1d2551dffb`).
+  - D07 implemented: bearer required everywhere except `/health`; OpenAPI/docs endpoints disabled (`docs_url=None`) since ngrok ingress is hostile.
+- **Deviations / decisions needing follow-up:**
+  - **Doc discrepancy:** the tracked zero-byte `backend` file did NOT exist at phase start (`git ls-files` showed only docs) — same for `flutter`. `git rm backend` was therefore a no-op; `backend/` was created directly. Docs claiming the placeholders exist are now stale.
+  - **Port deviation (user-approved 2026-10-25):** Windows reserved ports 55400–55499 via a dynamic WinNAT/Hyper-V exclusion (`netsh ... excludedportrange`), so locked D17 ports 55432/55433 could not bind (verified: `WinError 10013` on both). User approved substitutes: **dev Postgres 127.0.0.1:55532, disposable test Postgres 127.0.0.1:55533**. compose/.env.example/conftest use the substitutes; D17 in this file still shows the original locked values — revisit (restore locked ports if the exclusion clears, or formally re-lock the substitutes).
+- **Limitations / unresolved:**
+  - No `.env` created (only `.env.example`); `AUTH_TOKEN_PEPPER` must be set before `provision-token`/protected routes are used locally.
+  - Scheduler (D21) not wired — `SCHEDULER_ENABLED` config flag exists, APScheduler integration deferred to HWGA06.
+  - No routers beyond `/health` (events/goals/media/recaps are HWGA04+ per phase matrix).
 ### Phase HWGA03 — _pending_
 ### Phase HWGA04 — _pending_
 ### Phase HWGA05 — _pending_
