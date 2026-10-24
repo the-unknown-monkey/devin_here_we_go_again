@@ -55,7 +55,15 @@ def session(test_engine):
 
 
 @pytest.fixture()
-def client(session, monkeypatch):
+def media_root(tmp_path, monkeypatch):
+    """Per-test isolated media storage root (never the dev data/ dir)."""
+    root = tmp_path / "media"
+    monkeypatch.setenv("MEDIA_STORAGE_ROOT", str(root))
+    return root
+
+
+@pytest.fixture()
+def client(session, media_root, monkeypatch):
     monkeypatch.setenv("AUTH_TOKEN_PEPPER", TEST_PEPPER)
     get_settings.cache_clear()
 

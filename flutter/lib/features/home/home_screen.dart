@@ -8,6 +8,9 @@ import '../baselines/confirmation_bar.dart';
 import '../goals/goals_screen.dart';
 import '../modes/mode_control.dart';
 import '../timeline/timeline_view.dart';
+import '../vault/audio_player.dart';
+import '../vault/capture_sheet.dart';
+import '../vault/vault_device.dart';
 
 final _rng = Random();
 
@@ -21,9 +24,21 @@ String _newKey(String prefix) =>
 /// the backend after every write and never claims a save before the server
 /// confirms it.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.apiClient});
+  HomeScreen({
+    super.key,
+    required this.apiClient,
+    VaultDevice? vaultDevice,
+    VaultAudioPlayer? audioPlayer,
+  }) : vaultDevice = vaultDevice ?? _defaultDevice,
+       audioPlayer = audioPlayer ?? _defaultPlayer;
 
   final ApiClient apiClient;
+  final VaultDevice vaultDevice;
+  final VaultAudioPlayer audioPlayer;
+
+  // Plugin-backed defaults; tests inject fakes so no platform channel runs.
+  static final VaultDevice _defaultDevice = PluginVaultDevice();
+  static final VaultAudioPlayer _defaultPlayer = AudioPlayersVaultPlayer();
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,6 +47,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   ModeIntervalItem? _currentMode;
   List<EventItem> _events = [];
+  List<MediaItem> _media = [];
   int _activeGoals = 0;
   bool _loading = true;
   bool _busy = false;
@@ -50,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       final mode = await widget.apiClient.getMode();
-      final events = await widget.apiClient.getTimeline();
+      final timeline = await widget.apiClient.getTimeline();
       final goals = await widget.apiClient.getGoals();
       if (!mounted) return;
       setState(() {
@@ -58,7 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentMode = cur is Map<String, dynamic>
             ? ModeIntervalItem.fromJson(cur)
             : null;
-        _events = events;
+        _events = timeline.events;
+        _media = timeline.media;
         _activeGoals = goals.where((g) => g.isActive).length;
       });
     } on ApiException catch (e) {
@@ -170,9 +187,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              TimelineView(events: _events, loading: _loading),
+              TimelineView(
+                events: _events,
+                media: _media,
+                loading: _loading,
+                apiClient: widget.apiClient,
+                audioPlayer: widget.audioPlayer,
+                onMediaChanged: _load,
+              ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        tooltip: 'Keep a moment',
+        icon: const Icon(Icons.add_a_photo_outlined),
+        label: const Text('Moment'),
+        onPressed: () async {
+          final saved = await showModalBottomSheet<bool>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => CaptureSheet(
+              apiClient: widget.apiClient,
+              device: widget.vaultDevice,
+            ),
+          );
+          if (saved == true) _load();
+        },
       ),
     );
   }

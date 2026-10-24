@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,3 +27,21 @@ class MediaAssetRepository:
                 .order_by(MediaAsset.captured_at)
             ).scalars()
         )
+
+    def list_for_user_between(
+        self, user_id: uuid.UUID, start: datetime, end: datetime
+    ) -> list[MediaAsset]:
+        return list(
+            self.session.execute(
+                select(MediaAsset)
+                .where(
+                    MediaAsset.user_id == user_id,
+                    MediaAsset.captured_at >= start,
+                    MediaAsset.captured_at < end,
+                )
+                .order_by(MediaAsset.captured_at)
+            ).scalars()
+        )
+
+    def delete(self, asset: MediaAsset) -> None:
+        self.session.delete(asset)

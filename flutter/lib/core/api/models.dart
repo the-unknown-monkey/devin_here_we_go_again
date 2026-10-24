@@ -61,6 +61,52 @@ class GoalItem {
   bool get isActive => status == 'ACTIVE';
 }
 
+/// `MediaAssetMeta` (contracts §2). The backend never sends storage_key or
+/// any filesystem path; bytes are fetched only via GET /media/{id}.
+class MediaItem {
+  const MediaItem({
+    required this.id,
+    required this.kind,
+    required this.capturedAt,
+    required this.mimeType,
+    required this.byteLength,
+    this.durationSec,
+    required this.transcriptState,
+    this.transcriptText,
+  });
+
+  factory MediaItem.fromJson(Map<String, dynamic> json) => MediaItem(
+    id: json['id'] as String,
+    kind: json['kind'] as String,
+    capturedAt: DateTime.parse(json['captured_at'] as String),
+    mimeType: json['mime_type'] as String,
+    byteLength: json['byte_length'] as int? ?? 0,
+    durationSec: (json['duration_sec'] as num?)?.toDouble(),
+    transcriptState: json['transcript_state'] as String? ?? 'NOT_APPLICABLE',
+    transcriptText: json['transcript_text'] as String?,
+  );
+
+  final String id;
+  final String kind;
+  final DateTime capturedAt;
+  final String mimeType;
+  final int byteLength;
+  final double? durationSec;
+  final String transcriptState;
+  final String? transcriptText;
+
+  bool get isImage => kind == 'IMAGE';
+  bool get isAudio => kind == 'AUDIO' || kind == 'VOICE';
+}
+
+/// GET /timeline body: events + media refs for the private feed.
+class TimelineBundle {
+  const TimelineBundle({required this.events, required this.media});
+
+  final List<EventItem> events;
+  final List<MediaItem> media;
+}
+
 class ModeIntervalItem {
   const ModeIntervalItem({
     required this.mode,

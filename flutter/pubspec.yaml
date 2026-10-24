@@ -36,6 +36,12 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   flutter_secure_storage: ^11.2.0
+  image_picker: ^1.2.4
+  record: ^6.2.1
+  permission_handler: ^13.0.2
+  audioplayers: ^6.7.1
+  http_parser: ^4.1.2
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

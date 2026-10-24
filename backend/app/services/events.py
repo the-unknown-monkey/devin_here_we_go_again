@@ -94,13 +94,19 @@ class EventService:
             return existing, False
         return event, True
 
+    def window(
+        self, user: User, start: datetime | None, end: datetime | None
+    ) -> tuple[datetime, datetime]:
+        """Default timeline window = the user's local day (their timezone)."""
+        tz = ZoneInfo(user.timezone)
+        if end is None:
+            end = datetime.now(UTC)
+        if start is None:
+            start = end.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+        return _aware(start), _aware(end)
+
     def timeline(
         self, user: User, start: datetime | None, end: datetime | None
     ) -> list[Event]:
-        tz = ZoneInfo(user.timezone)
-        now = datetime.now(UTC)
-        if end is None:
-            end = now
-        if start is None:
-            start = end.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
-        return self.events.list_between(user.id, _aware(start), _aware(end))
+        start, end = self.window(user, start, end)
+        return self.events.list_between(user.id, start, end)

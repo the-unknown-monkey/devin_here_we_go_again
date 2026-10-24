@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' as http_parser;
 
 import '../config/app_config.dart';
 import 'api_error.dart';
@@ -26,6 +27,14 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
 
   String get displayMessage => error?.message ?? message;
+}
+
+/// Bytes fetched from GET /media/{id} plus the server-asserted content type.
+class MediaDownload {
+  const MediaDownload({required this.bytes, required this.mimeType});
+
+  final List<int> bytes;
+  final String mimeType;
 }
 
 /// Typed client for the HWGA FastAPI backend.
@@ -72,8 +81,9 @@ class ApiClient {
     'idempotency_key': idempotencyKey,
   });
 
-  /// GET /timeline — today's events (server default) or an explicit range.
-  Future<List<EventItem>> getTimeline({DateTime? from, DateTime? to}) async {
+  /// GET /timeline — today's events + media refs (server default window)
+  /// or an explicit range.
+  Future<TimelineBundle> getTimeline({DateTime? from, DateTime? to}) async {
     final query = <String, String>{
       if (from != null) 'from': from.toUtc().toIso8601String(),
       if (to != null) 'to': to.toUtc().toIso8601String(),
@@ -82,11 +92,135 @@ class ApiClient {
         ? '/timeline'
         : '/timeline?${Uri(queryParameters: query).query}';
     final body = await _get(path, authenticated: true);
-    final events = (body['events'] as List? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(EventItem.fromJson)
-        .toList();
-    return events;
+    return TimelineBundle(
+      events: (body['events'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(EventItem.fromJson)
+          .toList(),
+      media: (body['media'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(MediaItem.fromJson)
+          .toList(),
+    );
+  }
+
+  // ---- HWGA05 media routes (contracts.md §3) ----
+
+  /// POST /media — multipart upload → `MediaAssetMeta`. Not retried: the
+  /// request body is one-shot and uploads carry no idempotency key.
+  Future<MediaItem> uploadMedia({
+    required List<int> bytes,
+    required String mimeType,
+    required String kind,
+    double? durationSec,
+    DateTime? capturedAt,
+    String? transcriptText,
+  }) async {
+    final token = await tokenProvider?.call();
+    if (token == null || token.isEmpty) {
+      throw const ApiException(
+        message: 'No auth token configured on this device',
+      );
+    }
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/media'));
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['kind'] = kind;
+    if (durationSec != null) {
+      request.fields['duration_sec'] = durationSec.toString();
+    }
+    if (capturedAt != null) {
+      request.fields['captured_at'] = capturedAt.toUtc().toIso8601String();
+    }
+    if (transcriptText != null && transcriptText.trim().isNotEmpty) {
+      request.fields['transcript_text'] = transcriptText.trim();
+    }
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: 'capture',
+        contentType: http_parser.MediaType.parse(mimeType),
+      ),
+    );
+    http.StreamedResponse streamed;
+    try {
+      streamed = await _client.send(request).timeout(_timeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Request timed out', isNetwork: true);
+    } on SocketException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    } on http.ClientException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    }
+    final res = await http.Response.fromStream(streamed);
+    final decoded = _decode(res);
+    if (decoded is Map<String, dynamic>) return MediaItem.fromJson(decoded);
+    throw const ApiException(message: 'Unexpected response body');
+  }
+
+  /// GET /media/{id} — authenticated bytes. Returns the body + server
+  /// content type; no filesystem path is ever involved.
+  Future<MediaDownload> getMediaBytes(String id) async {
+    final headers = await _headers(true);
+    final http.Response res;
+    try {
+      res = await _client
+          .get(Uri.parse('$baseUrl/media/$id'), headers: headers)
+          .timeout(_timeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Request timed out', isNetwork: true);
+    } on SocketException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    } on http.ClientException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    }
+    if (res.statusCode >= 400) {
+      _decode(res); // throws the typed ApiException
+    }
+    return MediaDownload(
+      bytes: res.bodyBytes,
+      mimeType: (res.headers['content-type'] ?? 'application/octet-stream')
+          .split(';')
+          .first,
+    );
+  }
+
+  /// DELETE /media/{id} — owner-only server delete.
+  Future<void> deleteMedia(String id) async {
+    final headers = await _headers(true);
+    final http.Response res;
+    try {
+      res = await _client
+          .delete(Uri.parse('$baseUrl/media/$id'), headers: headers)
+          .timeout(_timeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Request timed out', isNetwork: true);
+    } on SocketException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    } on http.ClientException catch (e) {
+      throw ApiException(
+        message: 'Cannot reach server: ${e.message}',
+        isNetwork: true,
+      );
+    }
+    if (res.statusCode >= 400) {
+      _decode(res); // throws
+    }
   }
 
   /// GET /mode — `{current, intervals}`.
