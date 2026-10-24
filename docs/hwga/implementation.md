@@ -70,25 +70,25 @@ Flutter may generate platform-specific Android project files. Keep secrets and u
 
 ## 3. Environment Audit (Observed, Not Yet Phase-00 Accepted)
 
-Machine context: Windows 11; Nothing Phone 2a is the target device. The following observations were made during documentation planning; HWGA00 must recheck them and capture actual command output.
+Machine context: Windows 11 (25H2, build 26200); Nothing Phone 2a is the target device. **Verified in HWGA00 (2026-10-25)** — values below are from real command output:
 
-| Component | Observed | Remaining action |
+| Component | Verified value | HWGA00 outcome |
 |---|---|---|
-| Git | 2.52.0.windows.1 | Verify `git status`, branch, and `origin` at phase start |
-| Python | `python` is 3.13.11 | Pin/use 3.13 for backend; `py` launcher defaults to 3.14.0, so avoid an unqualified launcher |
+| Git | 2.52.0.windows.1 | `main`, clean tree, `origin` correct |
+| Python | `python` → 3.13.11 | `py` launcher defaults to 3.14.0 (`C:\Python314`) — select 3.13 explicitly, never bare `py` |
 | `uv` | 0.11.13 | Use for repeatable Python environment if selected in HWGA01 |
-| Flutter/Dart | SDK path `C:\src\flutter`; Dart SDK cache present | `flutter --version` did not complete in the initial check; run `flutter doctor -v`, record version and fix diagnostics |
-| Android Studio | Installed under `C:\Program Files\Android\Android Studio` | Use bundled JBR; verify Android Studio SDK configuration |
-| Android SDK | `%LOCALAPPDATA%\Android\Sdk`; platforms 35, 36, 36.1; build-tools 35.0.0, 36.1.0, 37.0.0; platform-tools, emulator, cmdline-tools present | `ANDROID_HOME` and `ANDROID_SDK_ROOT` unset; verify Flutter can locate SDK |
-| Android device tooling | SDK `platform-tools/adb.exe` exists | `adb` not on PATH; connect Nothing Phone 2a, enable USB debugging, authorize this PC, verify `adb devices` |
-| Emulator | Emulator binary exists | No system image/AVD found; not required for selected physical-phone path |
-| Java | Android Studio bundled `jbr/bin/java.exe` exists | `java`/`JAVA_HOME` not on PATH; use Studio's bundled JBR if Flutter requires it |
-| Docker | Docker CLI 29.1.2 exists | Docker engine/daemon not verified; launch Docker Desktop and verify `docker info` |
-| ngrok | Not found on PATH | Install/configure only after approval; account token must remain outside docs/source |
-| PostgreSQL CLI | `psql` not found | Not required if the disposable DB runs in Docker; use a container/client workflow |
-| Gemini credential | Not inspected | Obtain/configure in the backend environment only when needed; never paste into chat |
+| Flutter/Dart | Flutter 3.41.1 stable, Dart 3.11.0 at `C:\src\flutter` | `flutter doctor -v` passes Android toolchain; earlier `--version` hang did not reproduce |
+| Android Studio | `C:\Program Files\Android\Android Studio` | Bundled JBR auto-detected by Flutter |
+| Android SDK | `C:\Users\conne\AppData\Local\Android\Sdk`; platforms 35/36/36.1; build-tools 35.0.0/36.1.0/37.0.0 | `ANDROID_HOME`+`ANDROID_SDK_ROOT` set (user scope); all SDK licenses accepted |
+| Android device tooling | adb 1.0.41 (37.0.0) in platform-tools | platform-tools added to user PATH; Nothing Phone 2a (serial `000563429001789`, `model:A142`, `product:PacmanIND`) shows `device`; `adb reverse` verified |
+| Emulator | Emulator 36.5.11.0 binary present | No AVD; not needed — physical phone path chosen |
+| Java | Android Studio JBR `OpenJDK 21.0.10` | No system `java`/`JAVA_HOME`; Flutter auto-uses bundled JBR |
+| Docker | Client + engine 29.1.2 (Docker Desktop) | Engine verified; disposable `postgres:17-alpine` → PostgreSQL 17.7, `pg_isready` OK, stopped+removed |
+| ngrok | 3.39.11-msix on PATH | Authtoken stored locally (`ngrok config check` valid); no tunnel started. Fortinet TLS interception on normal network blocks dashboard — hotspot used; monitor at demo |
+| PostgreSQL CLI | `psql` on host not needed | Container `docker exec ... psql` workflow verified |
+| Gemini credential | Not inspected | Configure in backend env only when needed; never paste into chat |
 
-No project packages were installed and no machine-wide settings were changed during the planning audit.
+Approved user-scope changes made in HWGA00: Android SDK licenses accepted; `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and platform-tools PATH entry set; Docker Desktop restarted (a stuck `stopped` backend required killing and relaunching Docker Desktop processes). No machine-wide/admin changes; no project packages installed.
 
 ## 4. Setup Verification Commands (PowerShell)
 

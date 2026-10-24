@@ -27,14 +27,14 @@
 | **D12** | Commit policy? | Two-Step Commit Protocol per phase on `main`, push each phase | See §3 below |
 | **D13** | Contracts? | `docs/hwga/contracts.md` is the single authority for enums/models/API | Seeded; locked in HWGA01 |
 | **D14** | Rule-of-3 enforcement? | **Open — HWGA01** must pick DB mechanism (e.g. partial unique index) | Prevents silent choice in HWGA04 |
-| **D15** | Phone↔host route? | **Open — HWGA00/HWGA01** record verified route (USB reverse / LAN / ngrok) | Never assume phone `localhost` |
+| **D15** | Phone↔host route? | `adb reverse tcp:<port> tcp:<port>` over USB for development — verified working on Nothing Phone 2a (`UsbFfs tcp:8000 tcp:8000` listed). Phone reaches backend at `http://localhost:<port>`; ngrok reserved for demos only | Verified HWGA00 |
 | **D16** | Dependency pinning? | **Open — HWGA01** lock strategy (`uv.lock`, `pubspec.lock`); no mid-phase upgrades | Prevents version drift hallucination |
 
 ## 2. Phase Status Ledger
 
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
-| **HWGA00** | Setup & environment wiring | [ ] Planned | — | | | HWGA01 |
+| **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | | HWGA01 |
 | **HWGA01** | Decisions & contracts | [ ] Planned | — | | | HWGA02 |
 | **HWGA02** | Backend foundation | [ ] Planned | | | | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
@@ -54,22 +54,39 @@ Mandatory at every phase end (all V1 work on `main`):
 3. Docs-only phases (HWGA00, HWGA01) use a single `docs(hwga): ... (HWGAxx)` commit + push.
 4. Never amend, force-push, commit unrelated files, or invent a hash.
 
-## 4. Environment Evidence at Documentation Baseline
+## 4. Environment Evidence — Verified HWGA00 (2026-10-25)
 
-Observed paths/versions are recorded in [`implementation.md`](implementation.md). Important limitations:
+All entries below come from commands actually run on this machine during HWGA00:
 
-- `flutter doctor -v` and a working Nothing Phone 2a ADB connection have not been verified.
-- Docker CLI exists, but Docker engine readiness and disposable Postgres startup have not been verified.
-- ngrok is not found on PATH; no ngrok account token has been configured.
-- Android SDK files are present, but Android SDK environment variables and `adb` PATH configuration are absent.
-- No application code, dependencies, migrations, test suites, or end-to-end tests have been created/run.
-- Repository contains zero-byte files named `backend` and `flutter`, not source directories. Their replacement is deferred to HWGA02/HWGA03.
+- Git: `main`, clean tree, `origin` = github.com/the-unknown-monkey/devin_here_we_go_again.
+- `python --version` → **3.13.11**; `py` launcher defaults to **3.14.0** (`C:\Python314`) — always select 3.13 explicitly.
+- `uv --version` → **0.11.13**.
+- `flutter --version` → **Flutter 3.41.1 stable, Dart 3.11.0** at `C:\src\flutter` — the earlier reported hang did not reproduce.
+- `flutter doctor -v`: Flutter ✓, Windows ✓, Android toolchain ✓ (SDK `C:\Users\conne\AppData\Local\Android\Sdk`, platform android-36.1, build-tools 36.1.0, JBR 21.0.10 auto-detected from Android Studio), Chrome ✓, Network ✓. **All Android SDK licenses accepted** via `flutter doctor --android-licenses`. Only remaining warning: Visual Studio Build Tools incomplete — affects Windows-desktop builds only; non-blocking for Android target.
+- User env changes made (with approval): `ANDROID_HOME` and `ANDROID_SDK_ROOT` = `%LOCALAPPDATA%\Android\Sdk`; `%LOCALAPPDATA%\Android\Sdk\platform-tools` appended to user PATH.
+- `adb version` → 1.0.41 / 37.0.0. `adb devices -l` → `000563429001789  device product:PacmanIND model:A142` — **Nothing Phone 2a authorized** (needed `adb kill-server` + `start-server` once to pick it up). `adb reverse tcp:8000 tcp:8000` verified (`UsbFfs tcp:8000 tcp:8000`), then removed.
+- Docker: client + engine **29.1.2** (engine needed a full Docker Desktop process restart after a stuck `stopped` backend state). Disposable check: `docker run -p 127.0.0.1:55432:5432 postgres:17-alpine` → `pg_isready` accepting connections, `select version()` → **PostgreSQL 17.7**; container stopped and removed. No pull needed (image already local). Existing `businessager` containers untouched.
+- ngrok: **3.39.11-msix** on PATH (`WindowsApps` shim); authtoken configured by user via `ngrok config add-authtoken` → `ngrok config check` reports valid config; token never displayed. **No tunnel started.**
+- Known risk: Fortinet TLS interception blocks ngrok dashboard on the normal network (both Brave and Edge, `NET::ERR_CERT_AUTHORITY_INVALID`); dashboard was reached via phone hotspot. The ngrok agent tunnel itself may hit the same interception at demo time — revisit in HWGA08.
+- Repository still contains zero-byte `backend` and `flutter` files; their replacement stays deferred to HWGA02/HWGA03.
+- No application code created; no machine-wide (admin) changes made — all env changes were user-scope.
 
 ## 5. Phase Evidence Log
 
 For each completed phase record: execution date/time + timezone, branch, starting/ending commit, files changed, exact commands run, pass/fail/skip counts, device/service versions, unresolved limitations, and next phase. **A check that was not run counts as failed — never mark a phase complete on intended work.**
 
-### Phase HWGA00 — _pending_
+### Phase HWGA00: Setup & environment wiring
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** recorded after docs commit (see §2)
+- **Test results:** environment checks — all required checks passed; 2 non-blocking notes (VS Build Tools incomplete; Fortinet intercepts ngrok dashboard on normal network)
+- **Findings / deliverables:**
+  - Verified: Python 3.13.11, uv 0.11.13, Flutter 3.41.1/Dart 3.11.0, Android SDK (36.1) + JBR 21.0.10, adb 1.0.41, Docker 29.1.2, Postgres 17.7 disposable container, ngrok 3.39.11, Nothing Phone 2a (A142) authorized, `adb reverse` working.
+  - Approved changes applied: Android SDK licenses accepted; user-scope `ANDROID_HOME`/`ANDROID_SDK_ROOT`/PATH set; Docker Desktop restarted; disposable container created and removed.
+  - D15 recorded: `adb reverse` is the dev route; ngrok is demo-only.
+- **Limitations / unresolved:**
+  - VS Build Tools incomplete (Windows-desktop builds only; non-blocking).
+  - Fortinet may interfere with ngrok tunneling at demo time — monitor in HWGA08.
 ### Phase HWGA01 — _pending_
 ### Phase HWGA02 — _pending_
 ### Phase HWGA03 — _pending_

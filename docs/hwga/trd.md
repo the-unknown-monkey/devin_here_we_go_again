@@ -171,11 +171,15 @@ Verified facts about the actual code/environment, recorded as they are discovere
 
 | Area | Verified fact | Source phase |
 |---|---|---|
-| Python interpreter | `python` resolves to 3.13.11; `py` launcher defaults to 3.14.0 — always select the interpreter explicitly | Doc audit |
-| Android SDK env | `ANDROID_HOME`/`ANDROID_SDK_ROOT` unset; SDK at `%LOCALAPPDATA%\Android\Sdk` | Doc audit |
-| adb | `adb.exe` exists under SDK `platform-tools` but is not on PATH | Doc audit |
-| Java | No system `java`/`JAVA_HOME`; Android Studio bundled JBR exists | Doc audit |
+| Python interpreter | `python` resolves to 3.13.11; `py` launcher defaults to 3.14.0 (`C:\Python314`) — always select the interpreter explicitly | HWGA00 |
+| Android SDK env | `ANDROID_HOME`/`ANDROID_SDK_ROOT` now set (user scope) to `C:\Users\conne\AppData\Local\Android\Sdk`; SDK platforms 35/36/36.1, build-tools 35.0.0/36.1.0/37.0.0; all licenses accepted | HWGA00 |
+| adb | adb 1.0.41 (37.0.0); `platform-tools` on user PATH. If a freshly-connected device is missing, `adb kill-server && adb start-server` picks it up | HWGA00 |
+| Java | No system `java`/`JAVA_HOME`; Flutter auto-detects Android Studio JBR OpenJDK 21.0.10 | HWGA00 |
 | Placeholders | `backend` and `flutter` are tracked zero-byte files, not directories | Doc audit |
+| Flutter | 3.41.1 stable / Dart 3.11.0 at `C:\src\flutter`; `flutter doctor -v` clean for Android toolchain (only VS-Build-Tools warning, Windows-desktop-only) | HWGA00 |
+| Docker | Client + engine 29.1.2; disposable `postgres:17-alpine` on `127.0.0.1` verified (PostgreSQL 17.7). Docker Desktop may wedge in `stopped` state — kill `Docker Desktop`/`com.docker.*` processes and relaunch | HWGA00 |
+| Device | Nothing Phone 2a = serial `000563429001789`, `model:A142`, `product:PacmanIND`, authorized `device`; `adb reverse tcp:<port> tcp:<port>` confirmed — dev route is USB reverse, phone uses `http://localhost:<port>` | HWGA00 |
+| ngrok | 3.39.11-msix on PATH; authtoken stored at `%LOCALAPPDATA%\ngrok\ngrok.yml` (config check valid). Fortinet TLS interception on the normal network blocked the dashboard — hotspot workaround used; possible demo-time tunnel risk | HWGA00 |
 
 ## 10. Verification Policy
 
