@@ -3,8 +3,8 @@
 - **Project:** Here We Go Again (HWGA)
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
-- **Last inspected HEAD:** `a066c41` (`feat(hwga): implement private Sensory Moment Vault media lifecycle (HWGA05)`)
-- **Overall Progress:** 6 / 9 V1 phases completed
+- **Last inspected HEAD:** `e126791` (`feat(hwga): implement daily aggregation and grounded nightly receipt (HWGA06)`)
+- **Overall Progress:** 7 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -48,7 +48,7 @@
 | **HWGA03** | Flutter foundation & connection | [x] Completed | 11 passed, 0 failed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`); backend 13 passed (`uv run pytest tests -q -ra`) | 2026-10-25 | `1194963` | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [x] Completed | 27 passed, 0 failed (`cd backend && uv run pytest tests/test_events.py tests/test_modes.py tests/test_goals.py -q -ra`); full backend 40 passed; Flutter: format clean, `No issues found!`, 18 passed | 2026-10-25 | `f24912b` | HWGA05 |
 | **HWGA05** | Sensory Moment Vault | [x] Completed | 15 passed, 0 failed (`cd backend && uv run pytest tests/test_media.py -q -ra`); full backend 55 passed; Flutter: format clean, `No issues found!`, 24 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `a066c41` | HWGA06 |
-| **HWGA06** | Nightly Receipt | [ ] Planned | | | | HWGA07 |
+| **HWGA06** | Nightly Receipt | [x] Completed | 20 passed, 0 failed (`cd backend && uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra`); full backend 75 passed; Flutter: format clean, `No issues found!`, 29 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `e126791` | HWGA07 |
 | **HWGA07** | Morning Directive & recap chain | [ ] Planned | | | | HWGA08 |
 | **HWGA08** | Final V1 acceptance & phone demo | [ ] Planned | | | | Done |
 | **Post-V1** | Refinement & feature discovery | Deferred | | | | — |
@@ -190,7 +190,30 @@ For each completed phase record: execution date/time + timezone, branch, startin
 - **Limitations / unresolved:**
   - In-app phone UI round-trip (button taps on device) not exercised this session — the same authenticated route was proven by host round-trip; full device acceptance remains HWGA08.
   - VOICE clips stay `PENDING` until the approved Gemini STT step is wired (agent phases); `MANUAL_TEXT` fallback is available now.
-### Phase HWGA06 — _pending_
+### Phase HWGA06: Daily Aggregation & Nightly Unvarnished Receipt
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `e126791` (`feat(hwga): implement daily aggregation and grounded nightly receipt (HWGA06)`)
+- **Test results:** backend named tests `20 passed, 0 failed` (`cd backend && uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra`); full suite `75 passed` (`uv run pytest tests -q -ra`). Flutter `29 passed, 0 failed`; `dart format --set-exit-if-changed lib test` clean; `flutter analyze` → `No issues found!` (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`).
+- **Pre-flight observed state:** branch `main`, clean tree.
+- **Commands run + observed output:**
+  - `uv add "langgraph>=0.2,<1" "google-genai>=1.0,<2"` → langgraph 0.6.11, google-genai 1.75.0 (locked in committed `uv.lock`). SDK APIs verified against installed versions before coding: `genai.Client(api_key=..., http_options=HttpOptions(timeout=<ms>))`, `client.models.generate_content(model=, contents=, config=GenerateContentConfig(response_mime_type, response_json_schema, ...))`, `StateGraph(TypedDict)/add_node/add_edge/compile().invoke`.
+  - `docker compose up -d db-test` → already running.
+  - `uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra` → first run 16 passed / 4 failed — root cause: `candidate` key missing from `ReceiptState` so LangGraph dropped it between nodes; fixed, rerun → `20 passed`. Full suite → `75 passed`.
+  - `dart format --set-exit-if-changed lib test` → reformatted 2 files on first pass, rerun clean; `flutter analyze` → `No issues found!`; `flutter test` → `+29: All tests passed!`
+- **Findings / deliverables:**
+  - `app/services/daily_context.py` — deterministic `DailyContext` builder: user-local half-open day window (IANA tz), confirmation counts only for logged kinds (missing = omitted), quiet-moment count, mode intervals clipped to the window with derived `duration_min` (new `ModeIntervalRepository.list_overlapping`), media ids only, voice-scrap ideas only when transcript text exists, ACTIVE goals with `age_days`, `evidence_event_ids` = all in-window events. `AggregatedDay` carries a per-fact evidence index for the guard/fallback (never serialized).
+  - `app/agents/` — `schemas/receipt.py` (RecapCandidate, extra=forbid), `prompts/daily.py` (DailyContext-only prompt), `providers/gemini.py` (`NarrativeProvider` protocol + `GeminiProvider`; typed `ProviderErrorKind` TIMEOUT/QUOTA/INVALID_OUTPUT/UNAVAILABLE/NO_KEY; ≤2 retries on transient only; key stays in backend settings), `fact_guard.py` (deterministic: evidence-id subset checks, `<number> <noun>` quantity checks vs computed facts, mode-duration claims, goal-completion claims unsupported, foreign dates rejected, shame-language rejected; invalid insights dropped, invalid narrative → reject) + `build_fallback` (facts-only, non-shaming), `graphs/daily_receipt.py` (linear `load_context → compose_candidate → fact_guard → persist`, idempotent upsert on `uq_recaps_period`, observable persist failure → `FAILED`).
+  - `app/services/recaps.py` — `get_or_generate` (returns stored non-stale recap; generates/regenerates idempotently; non-DAILY → honest 404), `mark_stale_for_local_date` wired into event ingest + media upload for backfilled `occurred_at`/`captured_at`.
+  - `app/api/routers/recaps.py` — `GET /recaps?period=&date=`; `POST /internal/run/{job}` (`daily` only; unknown jobs 404). Provider injectable via `provider_override` dependency.
+  - Flutter: `RecapItem`/`RecapInsight` models, `ApiClient.getRecap` (404 → null), `lib/features/recaps/receipt_screen.dart` (loading/error-retry/empty-day/GENERATED-vs-FALLBACK states; highlight media fetched by authenticated id, images rendered inline, audio as tile), receipt entry added to HomeScreen app bar. `test/recap_screen_test.dart` covers all five states incl. 401-header check on media fetch.
+- **Deviations / decisions needing follow-up:**
+  - README phase index rows for HWGA02/03/04 still read "Planned" though status.md records them Completed — corrected to Completed alongside HWGA06.
+- **Limitations / unresolved:**
+  - Gemini path never executed live (no `GEMINI_API_KEY` in test env); provider seam fully mocked. Real-model output quality verified only at HWGA08 integration.
+  - VOICE STT (the single approved raw-media exception, contracts §4) still not wired — PENDING clips contribute no transcript; `MANUAL_TEXT` works.
+  - `GET /recaps` generates on first fetch (documented in router); a scheduler-triggered nightly run is the intended `POST /internal/run/daily` path — APScheduler wiring remains open (D21).
+  - Fact guard quantity checks cover known fact nouns; novel nouns are unchecked but every insight still requires valid evidence ids and the narrative still passes mode/date/goal/shame checks.
 ### Phase HWGA07 — _pending_
 ### Phase HWGA08 — _pending_
 

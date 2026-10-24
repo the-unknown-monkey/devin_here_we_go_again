@@ -26,11 +26,11 @@ This documentation set is the source of truth for the **Here We Go Again (HWGA)*
 |---|---|---|
 | [HWGA00](phases/HWGA00_environment_setup_and_wiring.md) | Check, install with approval, and verify the Windows/Android development environment | Completed |
 | [HWGA01](phases/HWGA01_decisions_and_contracts.md) | Freeze V1 decisions and typed contracts | Completed |
-| [HWGA02](phases/HWGA02_backend_foundation.md) | Establish FastAPI, Postgres, migrations, auth, and isolated test infrastructure | Planned |
-| [HWGA03](phases/HWGA03_flutter_foundation_and_connection.md) | Establish Flutter app structure and authenticated phone-to-API connection | Planned |
-| [HWGA04](phases/HWGA04_daily_baselines_and_rule_of_three.md) | Implement daily check-ins, modes, timeline, and Rule of 3 | Planned |
+| [HWGA02](phases/HWGA02_backend_foundation.md) | Establish FastAPI, Postgres, migrations, auth, and isolated test infrastructure | Completed |
+| [HWGA03](phases/HWGA03_flutter_foundation_and_connection.md) | Establish Flutter app structure and authenticated phone-to-API connection | Completed |
+| [HWGA04](phases/HWGA04_daily_baselines_and_rule_of_three.md) | Implement daily check-ins, modes, timeline, and Rule of 3 | Completed |
 | [HWGA05](phases/HWGA05_sensory_moment_vault.md) | Implement photo/audio/voice capture and private media handling | Completed |
-| [HWGA06](phases/HWGA06_nightly_receipt.md) | Implement daily aggregation, Gemini receipt, fallback, and fact guard | Planned |
+| [HWGA06](phases/HWGA06_nightly_receipt.md) | Implement daily aggregation, Gemini receipt, fallback, and fact guard | Completed |
 | [HWGA07](phases/HWGA07_morning_directive_and_recap_chain.md) | Implement in-app directive and recap chain in the agreed V1 scope | Planned |
 | [HWGA08](phases/HWGA08_final_v1_acceptance_and_phone_demo.md) | Run full regression, Nothing Phone 2a acceptance, and ngrok demo gate | Planned |
 | [Post-V1](phases/POSTV1_refinement_and_feature_discovery.md) | Refine UI/UX and select further features after V1 phone acceptance | Deferred |
