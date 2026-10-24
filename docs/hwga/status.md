@@ -3,8 +3,8 @@
 - **Project:** Here We Go Again (HWGA)
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
-- **Last inspected HEAD:** `f24912b` (`feat(hwga): implement baselines, modes, and Rule of 3 goal lifecycle (HWGA04)`)
-- **Overall Progress:** 5 / 9 V1 phases completed
+- **Last inspected HEAD:** `a066c41` (`feat(hwga): implement private Sensory Moment Vault media lifecycle (HWGA05)`)
+- **Overall Progress:** 6 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -47,7 +47,7 @@
 | **HWGA02** | Backend foundation | [x] Completed | 11 passed, 0 failed, 0 skipped (`cd backend && uv run pytest tests -q -ra`) | 2026-10-25 | `9551e0d` | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [x] Completed | 11 passed, 0 failed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`); backend 13 passed (`uv run pytest tests -q -ra`) | 2026-10-25 | `1194963` | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [x] Completed | 27 passed, 0 failed (`cd backend && uv run pytest tests/test_events.py tests/test_modes.py tests/test_goals.py -q -ra`); full backend 40 passed; Flutter: format clean, `No issues found!`, 18 passed | 2026-10-25 | `f24912b` | HWGA05 |
-| **HWGA05** | Sensory Moment Vault | [ ] Planned | | | | HWGA06 |
+| **HWGA05** | Sensory Moment Vault | [x] Completed | 15 passed, 0 failed (`cd backend && uv run pytest tests/test_media.py -q -ra`); full backend 55 passed; Flutter: format clean, `No issues found!`, 24 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `a066c41` | HWGA06 |
 | **HWGA06** | Nightly Receipt | [ ] Planned | | | | HWGA07 |
 | **HWGA07** | Morning Directive & recap chain | [ ] Planned | | | | HWGA08 |
 | **HWGA08** | Final V1 acceptance & phone demo | [ ] Planned | | | | Done |
@@ -171,7 +171,25 @@ For each completed phase record: execution date/time + timezone, branch, startin
 - **Limitations / unresolved:**
   - `GET /timeline` returns `"media": []` until HWGA05 exists.
   - No phone smoke run this session (device path unchanged from HWGA03; full acceptance is HWGA08).
-### Phase HWGA05 — _pending_
+### Phase HWGA05: Sensory Moment Vault
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `a066c41` (`feat(hwga): implement private Sensory Moment Vault media lifecycle (HWGA05)`)
+- **Test results:** backend named tests `15 passed, 0 failed` (`cd backend && uv run pytest tests/test_media.py -q -ra`); full suite `55 passed` (`uv run pytest tests -q -ra`). Flutter `24 passed, 0 failed`; `dart format --set-exit-if-changed lib test` clean; `flutter analyze` → `No issues found!` (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`).
+- **Commands run + observed output:**
+  - `uv add python-multipart>=0.0.20,<1` → python-multipart 0.0.32 (multipart form parsing); `flutter pub add image_picker record permission_handler audioplayers path_provider http_parser` — all locked in `pubspec.lock`.
+  - `uv run pytest tests/test_media.py -q -ra` → 15 passed (auth required, foreign-owner 404s, malformed/disallowed MIME 422, oversize 413, over-duration 413, IMAGE+duration 422, VOICE PENDING/MANUAL_TEXT, delete cleanup, timeline media refs).
+  - `uv run pytest tests -q -ra` → `55 passed in 2.64s`.
+  - `dart format --set-exit-if-changed lib test` clean; `flutter analyze` → `No issues found!`; `flutter test` → `+24: All tests passed!`
+  - Live round-trip on the real dev stack (docker `db` 55532, alembic head, uvicorn on 127.0.0.1:8000 — the same route the phone reaches via `adb reverse`): `POST /media` unauthenticated → 401; authenticated JPEG upload → 201 `MediaAssetMeta` (no storage_key); `GET /media/{id}` → 200 byte-identical file; `DELETE` → 204; `GET` after delete → 404; `data/media/` empty afterwards. Nothing Phone 2a (`000563429001789`) attached during the run.
+- **Findings / deliverables:**
+  - Backend: `app/storage/local.py` gains magic-byte MIME sniffing (declared MIME must match bytes); new `app/services/media.py` (upload/get/delete, owner check with no existence leak, MEDIA_CAPTURED event per asset, orphan-byte cleanup on metadata failure, per-test `media_root` fixture); `app/api/routers/media.py` (`POST /media` multipart 201, `GET`/`DELETE /media/{id}`; no static mount); `GET /timeline` now returns real `media` refs.
+  - Transcription per D19: VOICE uploads with user text → `MANUAL_TEXT`; without → `PENDING` (server-side Gemini STT wiring arrives with the agent phases; no raw media leaves the backend in this phase). IMAGE/AUDIO → `NOT_APPLICABLE`.
+  - Flutter: `lib/features/vault/` — `vault_device.dart` (`VaultDevice` interface + `PluginVaultDevice` using image_picker/record/permission_handler; permissions requested at point of use only), `capture_sheet.dart` (photo camera/library, ambient 5–10 s with auto-stop at 10 s + live duration, voice scrap with optional MANUAL_TEXT field), `media_card.dart` (timeline cards with lazy authenticated byte fetch, play/view, confirmed delete), `audio_player.dart` (audioplayers adapter). `ApiClient` gains multipart `uploadMedia` (no retry — one-shot body), `getMediaBytes`, `deleteMedia`; `getTimeline` returns `TimelineBundle`. HomeScreen FAB opens the sheet; injected device/player keep tests platform-free.
+  - Client never sees `storage_key` or filesystem paths; media bytes served only via authenticated `/media/{id}` (`Cache-Control: private, no-store`, opaque filename).
+- **Limitations / unresolved:**
+  - In-app phone UI round-trip (button taps on device) not exercised this session — the same authenticated route was proven by host round-trip; full device acceptance remains HWGA08.
+  - VOICE clips stay `PENDING` until the approved Gemini STT step is wired (agent phases); `MANUAL_TEXT` fallback is available now.
 ### Phase HWGA06 — _pending_
 ### Phase HWGA07 — _pending_
 ### Phase HWGA08 — _pending_
