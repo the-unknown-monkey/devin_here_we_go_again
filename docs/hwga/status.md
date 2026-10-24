@@ -34,7 +34,7 @@
 
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
-| **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | | HWGA01 |
+| **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | `3fd66ff` | HWGA01 |
 | **HWGA01** | Decisions & contracts | [ ] Planned | — | | | HWGA02 |
 | **HWGA02** | Backend foundation | [ ] Planned | | | | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
@@ -51,7 +51,7 @@ Mandatory at every phase end (all V1 work on `main`):
 
 1. **Step 1 — implementation commit:** stage only the phase's code/test files, inspect the staged diff, commit `git commit -m "feat/fix(hwga): <description> (HWGAxx)"`; capture `git rev-parse --short HEAD`.
 2. **Step 2 — ledger sync + push:** update this file with the real hash + test evidence, then `git add docs/hwga/status.md`, `git commit -m "docs(hwga): record HWGAxx commit hash in status.md"`, `git push origin main`.
-3. Docs-only phases (HWGA00, HWGA01) use a single `docs(hwga): ... (HWGAxx)` commit + push.
+3. Docs-only phases (HWGA00, HWGA01): primary `docs(hwga): ... (HWGAxx)` commit, then write that hash into the phase's Git commit cell above and push a `docs(hwga): record HWGAxx commit hash in status.md` ledger-sync commit so the cell is never blank.
 4. Never amend, force-push, commit unrelated files, or invent a hash.
 
 ## 4. Environment Evidence — Verified HWGA00 (2026-10-25)

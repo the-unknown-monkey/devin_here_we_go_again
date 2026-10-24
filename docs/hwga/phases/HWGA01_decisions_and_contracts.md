@@ -53,11 +53,15 @@ Convert the product vision into a small, testable V1 contract before application
 
 ## 6. Phase Completion & Git Protocol (Two-Step)
 
-Docs-only phase: single docs commit.
+Docs-only phase: primary docs commit, then a ledger-sync commit so the Git commit cell is not left blank.
 
 ```powershell
 git add docs/hwga/contracts.md docs/hwga/status.md docs/hwga/trd.md docs/hwga/implementation.md docs/hwga/phases
 git commit -m "docs(hwga): lock V1 decisions and typed contracts (HWGA01)"
+git rev-parse --short HEAD
+# write that hash into the HWGA01 row's Git commit cell in status.md, then:
+git add docs/hwga/status.md
+git commit -m "docs(hwga): record HWGA01 commit hash in status.md"
 git push origin main
 ```
 
@@ -82,5 +86,5 @@ Separate deterministic calculations from Gemini narrative; define typed inputs/o
 
 Change documentation only (docs/, and phase files where a locked decision changes named files/commands). Validate links, consistency, and schemas by inspection; do not run deployment or network commands.
 
-Finish with the docs commit: stage docs/hwga files, commit "docs(hwga): lock V1 decisions and typed contracts (HWGA01)", push origin main, report exact hash. Report exact files/decisions changed and remaining blockers. Stop before HWGA02.
+Finish with the docs commit: stage docs/hwga files, commit "docs(hwga): lock V1 decisions and typed contracts (HWGA01)", then write the resulting short hash into the HWGA01 Git commit cell in status.md, commit "docs(hwga): record HWGA01 commit hash in status.md", push origin main. Report both commit hashes. Report exact files/decisions changed and remaining blockers. Stop before HWGA02.
 ```

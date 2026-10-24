@@ -51,11 +51,15 @@ Verify that the Windows 11 machine is ready to build, run, and demo the Flutter 
 
 ## 6. Phase Completion & Git Protocol (Two-Step)
 
-This is a docs-only phase: single docs commit.
+This is a docs-only phase: primary docs commit, then a ledger-sync commit so the Git commit cell is not left blank.
 
 ```powershell
 git add docs/hwga/status.md docs/hwga/implementation.md docs/hwga/trd.md
 git commit -m "docs(hwga): record verified environment baseline (HWGA00)"
+git rev-parse --short HEAD
+# write that hash into the HWGA00 row's Git commit cell in status.md, then:
+git add docs/hwga/status.md
+git commit -m "docs(hwga): record HWGA00 commit hash in status.md"
 git push origin main
 ```
 
@@ -79,7 +83,7 @@ Decide and record in status.md (decision D15) the phone-to-host dev route, prefe
 
 Use PowerShell commands and record their actual output. If a check fails, diagnose from its exact output; do not mark the phase complete or continue around a blocker by guessing. Update only the environment/status documentation with verified facts, and add verified entries to the TRD Codebase Reality Anchors table. Preserve all user files and changes.
 
-Finish with the Two-Step Protocol (docs-only single commit): stage docs/hwga files, commit "docs(hwga): record verified environment baseline (HWGA00)", push origin main. Report exact commit hash.
+Finish with the Two-Step Protocol (docs-only): stage docs/hwga files, commit "docs(hwga): record verified environment baseline (HWGA00)", then write the resulting short hash into the HWGA00 Git commit cell in status.md, commit "docs(hwga): record HWGA00 commit hash in status.md", push origin main. Report both commit hashes.
 
 Exit only when the phase exit criteria pass or clearly report blockers. In your final message list changes, versions, exact verification evidence, failures/skips, remaining blockers, commit hash, and confirm no application code changed. Stop before HWGA01.
 ```
