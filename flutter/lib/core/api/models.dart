@@ -159,6 +159,7 @@ class RecapItem {
     required this.insights,
     required this.highlightMediaIds,
     this.directiveForNextCycle,
+    this.sourceRecapIds = const [],
     required this.status,
     required this.createdAt,
   });
@@ -177,6 +178,9 @@ class RecapItem {
         .whereType<String>()
         .toList(),
     directiveForNextCycle: json['directive_for_next_cycle'] as String?,
+    sourceRecapIds: (json['source_recap_ids'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
     status: json['status'] as String? ?? 'PENDING',
     createdAt: DateTime.parse(json['created_at'] as String),
   );
@@ -189,8 +193,42 @@ class RecapItem {
   final List<RecapInsight> insights;
   final List<String> highlightMediaIds;
   final String? directiveForNextCycle;
+  final List<String> sourceRecapIds;
   final String status;
   final DateTime createdAt;
+
+  bool get isFallback => status == 'FALLBACK';
+}
+
+/// `MorningDirective` (contracts §2). `shown_at` is set by the backend on
+/// first display — fetching again never regenerates.
+class DirectiveItem {
+  const DirectiveItem({
+    required this.id,
+    required this.forDate,
+    required this.content,
+    this.sourceRecapId,
+    required this.status,
+    this.shownAt,
+  });
+
+  factory DirectiveItem.fromJson(Map<String, dynamic> json) => DirectiveItem(
+    id: json['id'] as String,
+    forDate: DateTime.parse(json['for_date'] as String),
+    content: json['content'] as String? ?? '',
+    sourceRecapId: json['source_recap_id'] as String?,
+    status: json['status'] as String? ?? 'PENDING',
+    shownAt: json['shown_at'] == null
+        ? null
+        : DateTime.parse(json['shown_at'] as String),
+  );
+
+  final String id;
+  final DateTime forDate;
+  final String content;
+  final String? sourceRecapId;
+  final String status;
+  final DateTime? shownAt;
 
   bool get isFallback => status == 'FALLBACK';
 }

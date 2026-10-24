@@ -1,9 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/models.dart';
+import 'highlight_tile.dart';
 
 /// Nightly receipt view (HWGA06): the Recap the backend persisted for a
 /// local date. The UI renders what the server says — it never computes
@@ -152,7 +151,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           Text('Moments', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           for (final id in recap.highlightMediaIds)
-            _HighlightTile(apiClient: widget.apiClient, mediaId: id),
+            HighlightMediaTile(apiClient: widget.apiClient, mediaId: id),
         ],
         if (recap.directiveForNextCycle != null) ...[
           const SizedBox(height: 16),
@@ -171,78 +170,6 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           ),
         ],
       ],
-    );
-  }
-}
-
-/// A highlight media reference — bytes fetched through the authenticated
-/// /media/{id} route only; the client never sees a path.
-class _HighlightTile extends StatefulWidget {
-  const _HighlightTile({required this.apiClient, required this.mediaId});
-
-  final ApiClient apiClient;
-  final String mediaId;
-
-  @override
-  State<_HighlightTile> createState() => _HighlightTileState();
-}
-
-class _HighlightTileState extends State<_HighlightTile> {
-  MediaDownload? _media;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final media = await widget.apiClient.getMediaBytes(widget.mediaId);
-      if (mounted) setState(() => _media = media);
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.displayMessage);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return ListTile(
-        leading: const Icon(Icons.broken_image_outlined),
-        title: Text(_error!),
-      );
-    }
-    final media = _media;
-    if (media == null) {
-      return const ListTile(
-        leading: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        title: Text('Loading moment…'),
-      );
-    }
-    if (media.mimeType.startsWith('image/')) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.memory(
-            Uint8List.fromList(media.bytes),
-            height: 160,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    }
-    return ListTile(
-      leading: const Icon(Icons.graphic_eq),
-      title: const Text('Audio moment'),
-      subtitle: Text(media.mimeType),
     );
   }
 }

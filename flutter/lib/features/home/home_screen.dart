@@ -7,6 +7,8 @@ import '../../core/api/models.dart';
 import '../baselines/confirmation_bar.dart';
 import '../goals/goals_screen.dart';
 import '../modes/mode_control.dart';
+import '../recaps/chronology_screen.dart';
+import '../recaps/directive_card.dart';
 import '../recaps/receipt_screen.dart';
 import '../timeline/timeline_view.dart';
 import '../vault/audio_player.dart';
@@ -135,6 +137,17 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Today'),
         actions: [
           IconButton(
+            tooltip: 'Your week',
+            icon: const Icon(Icons.calendar_month_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChronologyScreen(apiClient: widget.apiClient),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Receipt',
             icon: const Icon(Icons.receipt_long_outlined),
             onPressed: () {
@@ -171,6 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            DirectiveCard(apiClient: widget.apiClient),
+            const SizedBox(height: 16),
             ModeControl(
               current: _currentMode,
               busy: _busy,

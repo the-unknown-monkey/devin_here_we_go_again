@@ -2,9 +2,11 @@
 
 GET /recaps?period=DAILY&date= returns the stored receipt, generating it
 idempotently on first fetch (and regenerating a stale one after backfill).
+GET /recaps?period=WEEKLY&date= does the same for the ISO week containing
+the date, consuming stored DAILY recaps only. MONTHLY/YEARLY stay honest
+404s — contract-level only, generation is post-V1.
 POST /internal/run/{daily|weekly} is the authenticated job trigger for the
-local scheduler/manual runs; only `daily` exists in V1 — everything else
-is an honest NOT_FOUND, not a stub pretending to work.
+local scheduler/manual runs; anything else is an honest NOT_FOUND.
 """
 
 from datetime import date
@@ -58,13 +60,14 @@ def run_job(
     session: Session = Depends(get_session),
     provider: NarrativeProvider | None = Depends(provider_override),
 ):
-    if job != "daily":
+    if job not in ("daily", "weekly"):
         raise HTTPException(
             status_code=404,
             detail={"code": "NOT_FOUND", "message": f"Unknown job {job!r}", "details": {}},
         )
+    period = RecapPeriod.DAILY if job == "daily" else RecapPeriod.WEEKLY
     try:
-        return _service(session, provider).get_or_generate(user, RecapPeriod.DAILY, date_)
+        return _service(session, provider).get_or_generate(user, period, date_)
     except DomainError as exc:
         session.rollback()
         raise HTTPException(status_code=exc.status_code, detail=exc.payload()) from exc

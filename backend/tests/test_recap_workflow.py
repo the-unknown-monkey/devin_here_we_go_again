@@ -308,9 +308,11 @@ def test_internal_run_daily(recap_client, session, authed):
     )
 
 
-def test_weekly_monthly_yearly_not_generated(recap_client, authed):
+def test_monthly_yearly_not_generated(recap_client, authed):
+    """MONTHLY/YEARLY remain contract-level only (post-V1). WEEKLY is
+    generated since HWGA07 — covered in test_weekly_recap.py."""
     token, _user = authed
-    for period in ("WEEKLY", "MONTHLY", "YEARLY"):
+    for period in ("MONTHLY", "YEARLY"):
         res = recap_client.get(
             f"/recaps?period={period}", headers=_auth(token)
         )

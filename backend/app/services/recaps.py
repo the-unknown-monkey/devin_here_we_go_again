@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.agents.graphs.daily_receipt import build_daily_graph
+from app.agents.graphs.weekly_recap import build_weekly_graph
 from app.agents.providers.gemini import GeminiProvider, NarrativeProvider
 from app.core.config import get_settings
 from app.db.models import RecapRow, User
@@ -67,8 +68,10 @@ class RecapService:
         period: RecapPeriod,
         local_date: date | None,
     ) -> Recap:
+        if period == RecapPeriod.WEEKLY:
+            return self._get_or_generate_weekly(user, local_date)
         if period != RecapPeriod.DAILY:
-            # WEEKLY roll-up arrives in HWGA07; MONTHLY/YEARLY are post-V1.
+            # MONTHLY/YEARLY remain contract-level only — post-V1.
             raise errors.not_found(f"{period.value} recaps are not generated yet")
 
         day = self._local_date(user, local_date)
@@ -84,6 +87,48 @@ class RecapService:
             raise errors.DomainError(
                 "GENERATION_FAILED",
                 "The receipt could not be saved right now — please try again.",
+                500,
+            )
+        return serialize_recap(row)
+
+    def _weekly_needs_regen(
+        self, user: User, week_start: date, week_end: date, row: RecapRow
+    ) -> bool:
+        """Deterministic staleness: regenerate once if any stored daily
+        recap in the window is stale/newer than the weekly, or the set of
+        source daily recaps changed since generation."""
+        if row.stale:
+            return True
+        dailies = self.recaps.list_daily_between(user.id, week_start, week_end)
+        created = _aware(row.created_at)
+        if any(d.stale or _aware(d.created_at) > created for d in dailies):
+            return True
+        current_ids = {str(d.id) for d in dailies}
+        return current_ids != {str(i) for i in (row.source_recap_ids or [])}
+
+    def _get_or_generate_weekly(self, user: User, local_date: date | None) -> Recap:
+        from app.services.weekly_context import week_bounds
+
+        day = self._local_date(user, local_date)
+        week_start, week_end = week_bounds(day)
+
+        existing = self.recaps.get_for_period(user.id, RecapPeriod.WEEKLY, week_start)
+        if existing is not None:
+            if not self._weekly_needs_regen(user, week_start, week_end, existing):
+                return serialize_recap(existing)
+            # Regenerate once under the same period key (D20 semantics):
+            # the persist node only overwrites a row flagged stale.
+            existing.stale = True
+            self.session.flush()
+
+        graph = build_weekly_graph(self.session, self._get_provider())
+        result = graph.invoke({"user_id": user.id, "local_date": day})
+
+        row = result.get("recap")
+        if row is None or result.get("status") == GenerationStatus.FAILED:
+            raise errors.DomainError(
+                "GENERATION_FAILED",
+                "The weekly recap could not be saved right now — please try again.",
                 500,
             )
         return serialize_recap(row)

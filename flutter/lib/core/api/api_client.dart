@@ -273,6 +273,13 @@ class ApiClient {
     }
   }
 
+  /// GET /directive/today — today's MorningDirective, generated
+  /// idempotently by the backend on first open.
+  Future<DirectiveItem> getDirectiveToday() async {
+    final body = await _get('/directive/today', authenticated: true);
+    return DirectiveItem.fromJson(body);
+  }
+
   Future<Map<String, dynamic>> _get(
     String path, {
     required bool authenticated,
