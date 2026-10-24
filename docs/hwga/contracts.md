@@ -159,6 +159,7 @@ class MorningDirective(BaseModel):
 | `GET` | `/recaps?period=DAILY&date=` | fetch recap | WEEKLY supported; MONTHLY/YEARLY return empty post-V1 |
 | `GET` | `/directive/today` | today's `MorningDirective` | generates idempotently on first open |
 | `POST` | `/internal/run/{daily\|weekly}` | authenticated job trigger | local MVP; no public exposure |
+| `GET` | `/me` | authenticated profile probe | added HWGA03 to evidence bearer auth; `/health` cannot |
 | `GET` | `/health` | liveness | unauthenticated, no data |
 
 ## 4. Cross-Cutting Rules (Locked HWGA01)

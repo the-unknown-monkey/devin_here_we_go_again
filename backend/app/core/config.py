@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    database_url: str = "postgresql+psycopg://hwga:hwga@127.0.0.1:55432/hwga"
+    database_url: str = "postgresql+psycopg://hwga:hwga@127.0.0.1:55532/hwga"
     test_database_url: str | None = None
     media_storage_root: Path = Path("data/media")
     auth_token_pepper: str = ""
