@@ -3,8 +3,8 @@
 - **Project:** Here We Go Again (HWGA)
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
-- **Last inspected HEAD:** `6b5be03` (`new docs`)
-- **Overall Progress:** 3 / 9 V1 phases completed
+- **Last inspected HEAD:** `1194963` (`feat(hwga): scaffold Flutter app shell and authenticated phone connection (HWGA03)`)
+- **Overall Progress:** 4 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -45,7 +45,7 @@
 | **HWGA00** | Setup & environment wiring | [x] Completed | Manual env checks (see §5) | 2026-10-25 | `3fd66ff` | HWGA01 |
 | **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `fe7f8cd` | HWGA02 |
 | **HWGA02** | Backend foundation | [x] Completed | 11 passed, 0 failed, 0 skipped (`cd backend && uv run pytest tests -q -ra`) | 2026-10-25 | `9551e0d` | HWGA03 |
-| **HWGA03** | Flutter foundation & connection | [ ] Planned | | | | HWGA04 |
+| **HWGA03** | Flutter foundation & connection | [x] Completed | 11 passed, 0 failed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`); backend 13 passed (`uv run pytest tests -q -ra`) | 2026-10-25 | `1194963` | HWGA04 |
 | **HWGA04** | Baselines & Rule of 3 | [ ] Planned | | | | HWGA05 |
 | **HWGA05** | Sensory Moment Vault | [ ] Planned | | | | HWGA06 |
 | **HWGA06** | Nightly Receipt | [ ] Planned | | | | HWGA07 |
@@ -127,7 +127,30 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - No `.env` created (only `.env.example`); `AUTH_TOKEN_PEPPER` must be set before `provision-token`/protected routes are used locally.
   - Scheduler (D21) not wired — `SCHEDULER_ENABLED` config flag exists, APScheduler integration deferred to HWGA06.
   - No routers beyond `/health` (events/goals/media/recaps are HWGA04+ per phase matrix).
-### Phase HWGA03 — _pending_
+### Phase HWGA03: Flutter Foundation & Nothing Phone Connection
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `1194963` (`feat(hwga): scaffold Flutter app shell and authenticated phone connection (HWGA03)`)
+- **Test results:** Flutter `11 passed, 0 failed` (`flutter test`); `dart format --set-exit-if-changed lib test` clean (exit 0); `flutter analyze` → `No issues found!`. Backend `13 passed, 0 failed` (`uv run pytest tests -q -ra`).
+- **Pre-flight observed state:** branch `main`, clean tree. **Discrepancy (same as HWGA02):** the tracked zero-byte `flutter` placeholder does NOT exist in the index or worktree (`git ls-files -s flutter` empty) — docs claiming it exists are stale; `flutter/` was created directly. `adb devices` showed `000563429001789 device product:PacmanIND model:A142` (Nothing Phone 2a). `adb` is not on this shell's PATH — invoked as `%LOCALAPPDATA%\Android\Sdk\platform-toolsdb.exe`.
+- **Commands run + observed output:**
+  - `flutter create --project-name hwga --org ai.hwga --platforms=android flutter`; `flutter pub add http flutter_secure_storage` → http 1.6.x, flutter_secure_storage 11.2.x (locked in committed `pubspec.lock`; default scaffold line ignoring `pubspec.lock` removed per D16).
+  - `cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test` → format clean, `No issues found!`, `+11: All tests passed!`
+  - Backend (needed fix): `docker compose up -d db-test`; `uv run pytest tests -q -ra` → `13 passed`.
+  - Device proof: `docker compose up -d db` (dev DB 55532), `uv run alembic upgrade head` (initial schema), `uv run python -m app.cli provision-token` (plaintext shown once, entered at runtime only), `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`.
+  - Host checks: `curl /health` → `{"status":"ok"}`; `curl /me` (no token) → `401`; `curl /me` (token) → `{"user_id":"6a852a6f-...","timezone":"Asia/Kolkata"}`.
+  - `adb reverse tcp:8000 tcp:8000` → `UsbFfs tcp:8000 tcp:8000` listed.
+  - `flutter devices` → `A142 (mobile) • 000563429001789 • android-arm64 • Android 15 (API 35)`.
+  - `flutter run -d 000563429001789` → built `app-debug.apk`, installed on Nothing Phone 2a. First run failed `/health` with `Failed host lookup: 'localhost'` — default base URL changed to `http://127.0.0.1:8000` (same D15 adb-reverse route). Second run, on-device log: `HWGA /health -> 200 ok` and `HWGA /me -> 200 user_id=6a852a6f tz=Asia/Kolkata` — authenticated request proven (same user_id as host curl). Token never written to repo/app source.
+- **Findings / deliverables:**
+  - `flutter/` scaffold per `implementation.md` layout: `lib/app/` (MaterialApp, M3 theme light+dark), `lib/core/` (`api_client.dart` typed client — bearer per D07, `ErrorResponse` mapping, 10s timeouts, single retry on network errors for idempotent GETs only; `token_store.dart` flutter_secure_storage + in-memory test store; `app_config.dart` `HWGA_API_BASE_URL`/`HWGA_DEV_TOKEN` dart-defines; `app_theme.dart`; `capture_permissions.dart` rationale scaffolding — manifest declares CAMERA/RECORD_AUDIO, never requested at launch), `lib/features/` (`auth/token_screen.dart`, `connection/connection_screen.dart` with loading/ok/error states + AnimatedSwitcher transitions).
+  - Safe states verified by widget tests: idle, loading, success, HTTP error, 401, no-token, unreachable.
+  - **Documented backend contract fix (needed):** added `GET /me` authenticated profile probe — `/health` is unauthenticated by contract so no protected route existed to prove bearer auth. `contracts.md` §3 updated with a `GET /me` row noting the HWGA03 rationale. Also corrected `Settings.database_url` default `55432`→`55532` to match the approved port deviation.
+- **Limitations / unresolved:**
+  - Dev-route base URL uses `127.0.0.1` (not `localhost`) — the phone's resolver rejected `localhost`.
+  - `.env` created locally (gitignored) with a generated `AUTH_TOKEN_PEPPER`; token lives in device secure storage at runtime.
+  - Permission runtime requests deferred to HWGA05 capture UI (scaffolding only, per phase).
+
 ### Phase HWGA04 — _pending_
 ### Phase HWGA05 — _pending_
 ### Phase HWGA06 — _pending_
