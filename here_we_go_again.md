@@ -167,13 +167,13 @@ We are not just storing logs — an **agentic workflow** turns invisible pattern
 - Sensory snaps metadata (timestamps, tags)
 - Active Rule-of-3 bucket list status + ages
 
-**Step 1 — LangChain State Aggregator:** normalizes all daily events into a structured `DailyContext` object:
+**Step 1 — LangChain State Aggregator:** normalizes all daily events into a structured `DailyContext` object. The JSON below is an **illustrative sketch** — the authoritative `DailyContext` schema (field names, types, enums) lives in [`docs/hwga/contracts.md`](docs/hwga/contracts.md):
 
 ```json
 {
   "date": "2026-10-24",
   "physical": { "water": 3, "stretch": true, "posture_resets": 2, "walk_min": 0, "clean_meals": 2 },
-  "modes": [{ "mode": "locked_in", "start": "09:12", "end": "15:40" }, { "mode": "rest", "start": "20:00", "end": "23:00" }],
+  "modes": [{ "mode": "LOCKED_IN", "start": "09:12", "end": "15:40" }, { "mode": "PURE_FUN_RECOVERY", "start": "20:00", "end": "23:00" }],
   "ideas": [{ "id": "v9", "transcript": "app that reminds me to call grandma", "captured_at": "02:14" }],
   "media_refs": ["snap://a1", "audio://r2"],
   "bucket_list": [{ "id": "b2", "title": "learn to swim", "age_days": 21, "action_today": false }]
@@ -246,14 +246,15 @@ Rendered as a private, non-comparative **"Proof of Life" Story/Chronicle** in th
 
 ## 7. Data Model (v1 draft)
 
+> **Illustrative draft — not a contract.** Table/column names and enum values below show intent only. Canonical enum spellings, typed models, and API shapes are defined in [`docs/hwga/contracts.md`](docs/hwga/contracts.md); on any conflict, contracts.md wins.
+
 ```
 users            (id, created_at, timezone)
 events           (id, user_id, type, payload jsonb, occurred_at)
-                   -- type: confirmation | mode_toggle | snap | audio_capsule
-                   --      | voice_scrap | quiet_moment
-media_assets     (id, user_id, kind [image|audio], storage_key, duration_sec,
+                   -- type: CONFIRMATION | MODE_TRANSITION | MEDIA_CAPTURED | QUIET_MOMENT
+media_assets     (id, user_id, kind [IMAGE|AUDIO|VOICE], storage_key, duration_sec,
                   transcript?, captured_at)
-bucket_items     (id, user_id, title, status [active|done|retired],
+bucket_items     (id, user_id, title, status [ACTIVE|COMPLETED|RETIRED],
                   created_at, resolved_at)   -- enforce ≤ 3 active per user
 recaps           (id, user_id, period_type, period_start, period_end,
                   summary_narrative, extracted_insights jsonb,
@@ -270,6 +271,8 @@ Invariants enforced at the API layer:
 ---
 
 ## 8. Draft API Surface (FastAPI)
+
+> **Illustrative draft — not a contract.** Route names/paths below are indicative; the authoritative API table (methods, paths, request/response shapes, error envelope) is [`docs/hwga/contracts.md`](docs/hwga/contracts.md) §3.
 
 | Method | Path | Purpose |
 |---|---|---|

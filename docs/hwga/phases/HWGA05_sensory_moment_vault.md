@@ -1,45 +1,86 @@
 # Phase HWGA05: Sensory Moment Vault
 
-- **Status:** Planned
-- **Dependency:** HWGA02 storage/auth foundation and HWGA03 phone connection
+- **Phase ID:** HWGA05
+- **Title:** Sensory Moment Vault
+- **Branch:** `main`
+- **Status:** Planned (0 / 9 completed)
+- **Dependency:** HWGA02 storage/auth foundation + HWGA03 phone connection; HWGA04 preferred
+- **Next Phase:** HWGA06
 - **Scope:** Raw photos, ambient audio, voice scraps, private media lifecycle
 
 ## 1. Goal
 
 Let the user preserve sensory moments without turning capture into a public or performative post. Implement a private, authenticated media round trip with safe local storage.
 
-## 2. Deliverables
+## 2. Required Reading
 
-- Flutter raw photo capture/pick flow with camera permission requested at point of use.
-- Ambient sound recording capped at 5-10 seconds as specified in HWGA01; show recording state and duration.
-- Voice scrap recording with text/transcript fallback; respect the approved transcription/provider decision.
-- Authenticated backend upload and playback/download/delete routes.
-- Metadata persistence for owner, media kind, captured time, MIME, byte length, audio duration, transcript state, and opaque storage key.
-- Backend storage adapter enforces generated filenames, path confinement, accepted content types, upload size, duration, ownership, and deletion behavior.
-- Timeline cards for image/audio/voice with playback and understandable permission/network/storage errors.
-- `.gitignore` protection for local media and tests for unauthorized access, invalid content, size/duration limits, and safe deletion.
+`docs/hwga/trd.md` (service boundaries/privacy), `docs/hwga/contracts.md` (MediaAssetMeta, MediaKind, TranscriptState, `/media` routes), `docs/hwga/implementation.md`, `docs/hwga/status.md`, and the HWGA01 media/transcription decisions.
 
-## 3. Privacy Boundaries
+## 3. Deliverables
+
+- Flutter raw photo capture/pick flow (`lib/features/vault/`) with camera permission at point of use.
+- Ambient sound recording capped at the HWGA01-approved 5–10 s; show recording state and duration.
+- Voice scrap recording with `MANUAL_TEXT` fallback; honor the HWGA01 transcription provider decision.
+- Backend `POST /media` upload + `GET`/`DELETE /media/{id}` playback/download/delete (contracts.md §3).
+- Metadata persistence per `MediaAssetMeta`: owner, kind, captured_at, MIME, byte_length, duration_sec, transcript_state, opaque storage key (never returned).
+- Storage adapter: generated filenames, path confinement, accepted MIME, size/duration limits, ownership checks, safe delete. Local media dir in `.gitignore`.
+- Timeline cards for `IMAGE`/`AUDIO`/`VOICE` with playback and understandable permission/network/storage errors.
+- Tests: `backend/tests/test_media.py` covering unauthorized access, invalid MIME, oversize, over-duration, ownership, delete; capture widget tests.
+
+## 4. Privacy Boundaries
 
 - Never mount local media as a public static directory.
 - Never trust client filenames, MIME values, filesystem paths, or ownership ids.
-- Do not send raw media to Gemini in this phase. Transcription must follow HWGA01 and must not expose credentials.
-- Do not log transcripts or signed/private media URLs.
+- Do not send raw media to Gemini in this phase. Transcription follows HWGA01 and must not expose credentials.
+- Do not log transcripts or private media URLs.
 
-## 4. Exit Criteria
+## 5. Exit Criteria
 
-- A phone-created sample can be uploaded, fetched by its owner, played/viewed, and deleted.
-- Another unauthenticated/unauthorized request cannot access that media.
-- Focused limit/validation tests and capture widget checks pass; record actual output.
+- A phone-created sample uploads, is fetched by its owner, plays/views, and deletes.
+- An unauthenticated/foreign request cannot access that media.
+- Named tests pass; a check that was not run counts as failed.
 
-## 5. Copy-Paste Prompt for a New Chat
+## 6. Test Commands
+
+```powershell
+cd backend && uv run pytest tests/test_media.py -q -ra
+cd ..\flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test
+```
+
+## 7. Phase Completion & Git Protocol (Two-Step)
+
+1. Run the commands above + one phone round-trip; record results.
+2. **Step 1 — implementation commit:**
+   ```powershell
+   git add backend flutter
+   git commit -m "feat(hwga): implement private Sensory Moment Vault media lifecycle (HWGA05)"
+   git rev-parse --short HEAD
+   ```
+3. **Step 2 — ledger sync + push:** update `status.md`, then:
+   ```powershell
+   git add docs/hwga/status.md
+   git commit -m "docs(hwga): record HWGA05 commit hash in status.md"
+   git push origin main
+   ```
+4. Deliver handoff summary: **Completed 6 / 9; Remaining: 3**.
+
+## 8. Copy-Paste Prompt for a New Chat
 
 ```text
-Please execute Phase HWGA05: Sensory Moment Vault.
+Please execute Phase HWGA05: Sensory Moment Vault on branch main.
 
-Read docs/hwga/README.md, docs/hwga/trd.md (especially service boundaries/privacy), docs/hwga/implementation.md, docs/hwga/status.md, accepted HWGA01 media/transcription decisions, existing storage/API/client code, and this phase file. Inspect Git state and current code before editing.
+Pre-flight (run first, paste output):
+  git branch --show-current
+  git status --short
 
-Implement only the user-initiated photo, 5-10 second ambient audio, and voice-scrap capture plus authenticated local-media upload/retrieval/deletion. Keep bytes on backend-controlled local disk and metadata in Postgres. Validate all server-side properties; use generated opaque paths; enforce owner checks and limits. Flutter must use the API and must not learn server filesystem paths. Do not expose media statically, log private content, add cloud media services, or send raw media to Gemini. Follow the recorded transcription decision and include a manual text fallback.
+Read docs/hwga/README.md, docs/hwga/trd.md, docs/hwga/contracts.md, docs/hwga/implementation.md, docs/hwga/status.md, the existing storage/API/client code, and phases/HWGA05_sensory_moment_vault.md. Inspect Git state and current code before editing.
 
-Preserve unrelated work and limit edits to this phase. Add/run focused security/storage/capture checks; test unauthenticated access, ownership, malformed MIME, excessive bytes/duration, cleanup, and expected audio playback behavior as applicable. Full app regression remains HWGA08. Report exact verification evidence and limitations; update status with actual results only. No commit/push. Stop before HWGA06.
+Implement only user-initiated photo, 5-10 s ambient audio, and voice-scrap capture plus authenticated local-media upload/retrieval/deletion — per contracts.md (MediaAssetMeta, MediaKind, TranscriptState, /media routes). Bytes on backend-controlled local disk; metadata in Postgres. Validate all server-side properties; generated opaque paths; owner checks and limits from the HWGA01 media decision. Flutter uses the API and must not learn server filesystem paths. No static mount, no logging private content, no cloud media service, no raw media to Gemini. Follow the recorded transcription decision and include the MANUAL_TEXT fallback.
+
+Write and run:
+  cd backend && uv run pytest tests/test_media.py -q -ra
+  cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test
+Test unauthenticated access, ownership, malformed MIME, excessive bytes/duration, and cleanup. A check that was not run counts as failed. Full app regression remains HWGA08.
+
+Finish with the Two-Step Commit Protocol exactly as written in the phase file (implementation commit → hash → status.md docs commit → git push origin main). Report both commit hashes. Stop before HWGA06.
 ```

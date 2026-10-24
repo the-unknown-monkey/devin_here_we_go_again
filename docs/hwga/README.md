@@ -4,12 +4,13 @@ This documentation set is the source of truth for the **Here We Go Again (HWGA)*
 
 ## Authority and Reading Order
 
-1. [`../../here_we_go_again.md`](../../here_we_go_again.md) — product vision, V1 features, pipeline overview, and agreed hackathon scope.
+1. [`../../here_we_go_again.md`](../../here_we_go_again.md) — product vision, V1 features, pipeline overview, and agreed hackathon scope. Its §7 data model and §8 API surface are illustrative drafts, not contracts.
 2. [`trd.md`](trd.md) — technical decisions, service boundaries, privacy/security invariants, and coding-agent rules.
-3. [`implementation.md`](implementation.md) — planned repository layout, local environment, setup verification, and test strategy.
-4. [`status.md`](status.md) — current decisions, phase status, observed environment, and evidence. This file records actual state only.
-5. [`phases/`](phases/) — self-contained phase specifications with copy-ready prompts for new coding-agent conversations.
-6. `runbook.md` — intentionally not created until HWGA08 demo commands have been executed and verified.
+3. [`contracts.md`](contracts.md) — **single authoritative source** for enums, typed models, API shapes, and error formats. Locked by HWGA01.
+4. [`implementation.md`](implementation.md) — planned repository layout (illustrative), local environment, setup verification, phase↔file matrix, and test strategy.
+5. [`status.md`](status.md) — current decisions, phase status, observed environment, and evidence. This file records actual state only.
+6. [`phases/`](phases/) — self-contained phase specifications with copy-ready prompts for new coding-agent conversations.
+7. `runbook.md` — intentionally not created until HWGA08 demo commands have been executed and verified.
 
 ## Document Governance
 

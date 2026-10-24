@@ -1,7 +1,11 @@
 # Phase HWGA02: FastAPI, Database & Backend Foundation
 
-- **Status:** Planned
+- **Phase ID:** HWGA02
+- **Title:** FastAPI, Database & Backend Foundation
+- **Branch:** `main`
+- **Status:** Planned (0 / 9 completed)
 - **Dependency:** HWGA01 contracts accepted
+- **Next Phase:** HWGA03
 - **Scope:** Backend skeleton, local persistence, auth baseline, health/configuration
 
 ## 1. Goal
@@ -10,18 +14,18 @@ Create the smallest maintainable FastAPI foundation in `backend/` that can safel
 
 ## 2. Required Reading
 
-`here_we_go_again.md`, `docs/hwga/trd.md`, `docs/hwga/implementation.md`, `docs/hwga/status.md`, and the accepted HWGA01 contracts.
+`here_we_go_again.md`, `docs/hwga/trd.md`, `docs/hwga/contracts.md` (authoritative shapes), `docs/hwga/implementation.md`, `docs/hwga/status.md`, and the accepted HWGA01 decisions.
 
 ## 3. Deliverables
 
-- Backend Python project metadata/lock and repeatable Python 3.13 environment.
-- FastAPI app factory/entry point, settings validation, structured safe logging, and health route.
-- Postgres Docker Compose for local development; migrations and repository/session layer.
-- Separate disposable test DB configuration; guard against tests using the local app DB.
-- The selected single-user auth mechanism, secret bootstrap, and protected API dependency.
-- Typed foundational models and repositories for users/configuration, events, mode intervals, goals, media metadata, recaps, and directives as approved in HWGA01.
-- Local media storage adapter scaffold with path confinement, safe generated names, and limits; no public static directory mount.
-- Safe `.env.example`, `.gitignore`, and setup instructions; no real `.env` or secret value committed.
+- `backend/pyproject.toml` + `uv.lock` on Python 3.13 (D08, D16); `.env.example`, `.gitignore`.
+- `backend/app/main.py` FastAPI app factory/entry point, `app/core/` settings validation + structured safe logging, `/health` route.
+- `backend/docker-compose.yml` Postgres for local dev (no public DB port); `backend/migrations/` + `app/db/` session/repository layer per the HWGA01 ORM decision.
+- Separate disposable test DB configuration (port recorded in status.md); guard against tests using the local app DB.
+- The selected single-user auth mechanism (D07), secret bootstrap, and protected API dependency.
+- Typed models/repositories matching `contracts.md` §2: users/configuration, events, mode intervals, goals, media metadata, recaps, directives.
+- `app/storage/` local media storage adapter scaffold: path confinement, generated names, limits; no public static mount.
+- `backend/tests/` foundation tests (health, auth rejection, migration applies on disposable DB, secret redaction).
 
 ## 4. Boundaries
 
@@ -29,18 +33,54 @@ Routers validate/authorize then call application services. Services implement ru
 
 ## 5. Exit Criteria
 
-Local backend starts with documented config; health route is responsive; migration applies to disposable/local test DB safely; auth rejects missing/invalid credentials; logs redact secrets; targeted foundation checks pass. Report any intentionally deferred schema/API details rather than inventing them.
+Local backend starts with documented config; `/health` responds; migration applies to disposable test DB; auth rejects missing/invalid credentials; logs redact secrets; the named foundation tests pass. Report any intentionally deferred schema/API details rather than inventing them.
 
-## 6. Copy-Paste Prompt for a New Chat
+## 6. Test Commands
+
+```powershell
+cd backend
+uv sync
+uv run pytest tests -q -ra
+uv run uvicorn app.main:app --port <HWGA01-port>   # then curl http://127.0.0.1:<port>/health
+```
+
+## 7. Phase Completion & Git Protocol (Two-Step)
+
+1. Run the tests above; confirm pass counts.
+2. **Step 1 — implementation commit:**
+   ```powershell
+   git rm backend   # remove tracked zero-byte placeholder first (git add -A also works)
+   git add backend
+   git commit -m "feat(hwga): scaffold FastAPI backend, Postgres, auth, isolated tests (HWGA02)"
+   git rev-parse --short HEAD
+   ```
+3. **Step 2 — ledger sync + push:** update `status.md` (phase table + §5 evidence log) with the real hash and test counts, then:
+   ```powershell
+   git add docs/hwga/status.md
+   git commit -m "docs(hwga): record HWGA02 commit hash in status.md"
+   git push origin main
+   ```
+4. Deliver handoff summary: **Completed 3 / 9; Remaining: 6**.
+
+## 8. Copy-Paste Prompt for a New Chat
 
 ```text
-Please execute Phase HWGA02: FastAPI, Database & Backend Foundation.
+Please execute Phase HWGA02: FastAPI, Database & Backend Foundation on branch main.
 
-Read docs/hwga/README.md, docs/hwga/trd.md, docs/hwga/implementation.md, docs/hwga/status.md, the accepted HWGA01 contracts, and this phase. Inspect current git status/branch, existing files, environment, and installed dependency versions before editing. Treat source code as truth; do not assume a scaffold exists.
+Pre-flight (run first, paste output):
+  git branch --show-current
+  git status --short
+  type backend   # confirm it is still the tracked zero-byte placeholder
 
-Implement only the backend foundation deliverables. The user explicitly authorized replacing the zero-byte tracked `backend` file with a directory in this phase; inspect it and the staged/unstaged diff first, then make only that scoped replacement. Do not change the `flutter` placeholder. Preserve unrelated work.
+Read docs/hwga/README.md, docs/hwga/trd.md, docs/hwga/contracts.md, docs/hwga/implementation.md, docs/hwga/status.md, and phases/HWGA02_backend_foundation.md. Inspect installed dependency versions before editing. Treat source code as truth; do not assume a scaffold exists.
 
-Use Python 3.13 and the dependency/migration/auth choices recorded in HWGA01; if absent or contradictory, stop and ask rather than choose. Keep FastAPI routers, application/domain services, repositories, media storage, and future agent code within the documented ownership boundaries. Never add secrets to source or logs, expose local media as static files, or point tests at personal/production data. Do not add Gemini functionality yet.
+Implement only the backend foundation deliverables in the phase file. I explicitly authorized replacing the zero-byte tracked `backend` file with a directory in this phase; inspect it and the staged/unstaged diff first, then make only that scoped replacement. Do not change the `flutter` placeholder. Preserve unrelated work.
 
-Add only focused foundation tests/checks and run the documented narrow commands. Report exact command output, results, failures/skips, files changed, and any migration or security caveats. Update status.md only with observed evidence. Do not commit/push, do not start the next phase, and do not claim full V1 acceptance.
+Use Python 3.13 and the dependency/migration/auth choices locked in HWGA01 (contracts.md + status.md decisions); if absent or contradictory, stop and ask rather than choose. Keep FastAPI routers, application/domain services, repositories, media storage, and future agent code within the documented ownership boundaries. Never add secrets to source or logs, expose local media as static files, or point tests at personal/production data. No Gemini functionality yet.
+
+Add only focused foundation tests and run:
+  cd backend && uv sync && uv run pytest tests -q -ra
+Then verify /health via uvicorn on the HWGA01 port. Report exact command output, results, failures/skips, files changed, and any migration or security caveats. A check that was not run counts as failed.
+
+Finish with the Two-Step Commit Protocol exactly as written in the phase file (implementation commit → hash → status.md docs commit → git push origin main). Report both commit hashes. Stop before HWGA03.
 ```

@@ -23,7 +23,7 @@ HWGA02 is explicitly authorized to replace the two zero-byte placeholders with s
 
 ## 2. Planned Source Layout
 
-The following is an intended layout, not a claim that these files already exist. Adjust names only after inspecting generated framework files and recording the decision.
+The following is an intended layout, not a claim that these files already exist. **It is illustrative:** create only what each phase needs, and always inspect the real tree before importing or referencing paths — never assume a file exists because it is drawn here. Adjust names only after inspecting generated framework files and recording the decision in `status.md`.
 
 ```text
 backend/
@@ -127,7 +127,38 @@ Minimum readiness criteria:
 - Expose only the backend route through ngrok; bind database access to local-only networks.
 - Gemini credentials exist only in backend environment; Flutter has no provider key.
 
-## 6. Phase-Level Test Harness vs. Final Acceptance
+## 6. Phase ↔ File Matrix
+
+Phase → primary files/deliverables. Fill in exact paths as phases land; the target column is the plan, not a promise that files exist.
+
+| Phase | Primary files & deliverables | Layer | Prerequisite |
+|---|---|---|---|
+| **HWGA00** | Environment verification; updates to `implementation.md`/`status.md` evidence only | Machine setup | — |
+| **HWGA01** | `docs/hwga/contracts.md` locked; `status.md` decisions; `trd.md`/`implementation.md` aligned | Docs only | HWGA00 |
+| **HWGA02** | `backend/` scaffold: `pyproject.toml`, `uv.lock`, `.env.example`, `app/main.py`, `app/core/`, `app/db/`, `app/storage/`, `docker-compose.yml`, `backend/tests/` | Backend | HWGA01 |
+| **HWGA03** | `flutter/` scaffold: `pubspec.yaml`, `lib/main.dart`, `lib/app/`, `lib/core/api client`, `lib/features/auth/`, app shell/theme | Flutter | HWGA02 |
+| **HWGA04** | `app/domain/` events/modes/goals rules, `app/api/routers/` event+mode+goal routes, `lib/features/{timeline,baselines,modes,goals}/` | Both | HWGA03 |
+| **HWGA05** | `app/storage/` media adapter, media routers, `lib/features/vault/` capture + playback | Both | HWGA04 |
+| **HWGA06** | `app/domain/` daily aggregation, `app/agents/{graphs,prompts,schemas,providers}/`, recap router, `lib/features/recaps/` receipt view | Both | HWGA05 |
+| **HWGA07** | Directive workflow + router, weekly recap workflow, `lib/features/recaps/` directive card + chronology | Both | HWGA06 |
+| **HWGA08** | `docs/hwga/runbook.md` (only after verified acceptance); no new feature code | Both | HWGA07 |
+
+## 7. Test Harness Matrix
+
+Exact commands get pinned when each layer exists; until then phases must not invent commands.
+
+| Layer | Command (once scaffolded) | Target |
+|---|---|---|
+| Backend unit/domain | `cd backend && uv run pytest tests -q -ra` | disposable test DB only |
+| Backend single file | `uv run pytest tests/<file>.py -q -ra` | disposable test DB only |
+| Flutter analyze | `cd flutter && dart format --set-exit-if-changed lib test && flutter analyze` | — |
+| Flutter widget tests | `flutter test` | — |
+| Flutter device build | `flutter run -d <nothing-phone-id>` | Nothing Phone 2a via `adb devices` |
+| Health check | `curl http://127.0.0.1:<port>/health` | port locked in HWGA01 |
+
+Test isolation rules: the disposable test database/container is separate from the dev database; tests never point at a user's real dataset; the disposable Postgres host port is assigned in HWGA01/HWGA02 and recorded in `status.md`.
+
+## 8. Phase-Level Test Harness vs. Final Acceptance
 
 Every code phase uses focused checks appropriate to its scope (format, static analysis, compile, selected unit/contract tests). The **full regression and end-to-end campaign is HWGA08**, including:
 

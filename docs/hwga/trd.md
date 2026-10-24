@@ -7,7 +7,7 @@
 - **Status:** V1 development baseline; phase work not started
 - **Repository:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Current branch at documentation baseline:** `main`
-- **Companions:** [Product blueprint](../../here_we_go_again.md), [implementation map](implementation.md), [status ledger](status.md), [phase prompts](phases/)
+- **Companions:** [Product blueprint](../../here_we_go_again.md), [contracts](contracts.md) (authoritative enums/models/API), [implementation map](implementation.md), [status ledger](status.md), [phase prompts](phases/)
 
 ---
 
@@ -41,9 +41,11 @@ The data model and architecture must support Daily, Weekly, Monthly, and Yearly 
 - Demo access: ngrok on Windows 11 may expose the authenticated FastAPI HTTP port only. Never tunnel Postgres, the Docker daemon, or an unauthenticated debug interface.
 - Single-user product/auth scope: no public registration or social graph. HWGA01 must select the concrete local authentication mechanism and record its threat assumptions.
 - UI baseline: clean, minimal, modern, coherent; intentional icons and transitions/animations. Defer major visual redesign until full V1 acceptance on the phone.
-- Source roots: `flutter/` and `backend/`. At the documentation baseline, both names are zero-byte files, not directories. HWGA02 may replace them with directories as explicitly authorized by the user.
+- Source roots: `flutter/` and `backend/`. At the documentation baseline, both names are zero-byte files, not directories. HWGA02 replaces `backend` and HWGA03 replaces `flutter`, each as explicitly authorized by the user.
 
 ## 3. Functional Requirements
+
+> **Contract authority:** all enums, typed models, API shapes, and error formats are defined in [`contracts.md`](contracts.md). Requirements below state behavior only; field names and values come from contracts.md.
 
 ### 3.1 Human baselines and modes
 
@@ -149,21 +151,36 @@ Require structured output (Pydantic/JSON schema), explicit evidence references w
 2. **No invented APIs or files:** search the repository, inspect dependencies, and verify actual names, versions, schemas, paths, and commands before relying on them. Mark unknowns and ask rather than fabricate.
 3. **Honor boundaries:** change the owning service only; no Flutter-to-DB/LLM access, agent direct SQL, or media-path leakage.
 4. **Keep scope bounded:** implement only the active phase deliverables. Do not pre-implement later phases or opportunistically refactor unrelated code.
-5. **Protect the worktree:** preserve user changes; do not reset, clean, checkout over, delete, or overwrite unrelated files. `backend`/`flutter` placeholder replacement is authorized only as the explicit HWGA02 setup task.
+5. **Protect the worktree:** preserve user changes; do not reset, clean, checkout over, delete, or overwrite unrelated files. `backend`/`flutter` placeholder replacement is authorized only as the explicit HWGA02/HWGA03 setup tasks.
 6. **No unapproved side effects:** ask before network downloads, elevated permissions, external API calls, deployment, sending data to a third party, or destructive operations. Never expose credentials in chat or logs.
 7. **No silent weakening:** no fake production data, swallowed exceptions, skipped tests without reason, test monkeypatches standing in for live behavior, broad `except` returning success, or relaxed validation merely to pass.
 8. **Verify truthfully:** run the narrow phase-local compile/lint/contract checks as applicable; report exact commands, results, failures, skips, and limitations. Never claim a check passed unless its output proves it.
 9. **Testing schedule:** full automated regression, end-to-end workflow, and physical-phone acceptance are consolidated in the final V1 phase HWGA08, as requested. Small phase-local checks are still required to avoid accumulating broken code; do not claim the complete product is tested before HWGA08.
 10. **Status evidence:** update `status.md` with actual decision changes and evidence only. Do not reuse reference-project pass counts, dates, credentials, or deployment state.
-11. **Commit discipline:** do not commit or push unless the user requests it. If requested, inspect staged diff, commit only the intended files, report the exact hash; never amend or force-push without explicit request.
-12. **Evidence/commit synchronization:** if the user requests commits, commit phase code/tests first and capture its hash; then record that hash and actual verification in `status.md` in a separate docs commit. Push only if explicitly requested. Never invent a commit or test hash.
+11. **Two-Step Commit Protocol (mandatory at every phase end):**
+    - **Step 1 — implementation commit:** stage only the phase's code/test files, inspect the staged diff, then `git commit -m "feat/fix(hwga): <description> (HWGAxx)"`. Capture the hash with `git rev-parse --short HEAD`.
+    - **Step 2 — ledger sync + push:** update `status.md` with the real hash and actual test evidence, then `git add docs/hwga/status.md`, `git commit -m "docs(hwga): record HWGAxx commit hash in status.md"`, and `git push origin main`.
+    - Never amend, force-push, or commit unrelated files. Never invent a commit hash. Docs-only phases (HWGA00, HWGA01) use a single `docs(hwga): ... (HWGAxx)` commit then push.
+12. **Evidence/commit synchronization:** `status.md` must record the Step-1 hash verbatim plus real commands and results. If commits are impossible (e.g. user declines), the phase reports its worktree state and does not claim completion.
 13. **Phase handoff:** finish with scope completed, changed files, exact verification evidence, unresolved issues, and progress `completed N/9 V1 phases`; stop at the phase boundary.
 14. **Human-controlled machine setup:** Phase HWGA00 must inspect first. Ask before installing/downloading software, changing machine-wide PATH/environment, accepting licenses, using admin rights, or configuring a real token.
 
-## 9. Verification Policy
+## 9. Codebase Reality Anchors (Zero-Hallucination Register)
+
+Verified facts about the actual code/environment, recorded as they are discovered. Agents must consult this table before relying on names, paths, or commands; each entry must come from real inspection, not assumption. Add rows as phases verify them.
+
+| Area | Verified fact | Source phase |
+|---|---|---|
+| Python interpreter | `python` resolves to 3.13.11; `py` launcher defaults to 3.14.0 — always select the interpreter explicitly | Doc audit |
+| Android SDK env | `ANDROID_HOME`/`ANDROID_SDK_ROOT` unset; SDK at `%LOCALAPPDATA%\Android\Sdk` | Doc audit |
+| adb | `adb.exe` exists under SDK `platform-tools` but is not on PATH | Doc audit |
+| Java | No system `java`/`JAVA_HOME`; Android Studio bundled JBR exists | Doc audit |
+| Placeholders | `backend` and `flutter` are tracked zero-byte files, not directories | Doc audit |
+
+## 10. Verification Policy
 
 Each phase defines a small exit gate that fits its changes (format/static checks, API contract checks, or manual environment checks). **The complete V1 test campaign occurs in HWGA08**: backend unit/integration tests on disposable DB, Flutter tests/build, API/media/security checks, and a complete physical Nothing Phone 2a scenario through ngrok. A failed gate is fixed and rerun; it is not marked complete with known failures.
 
-## 10. Scope Change Control
+## 11. Scope Change Control
 
 V1 is frozen after HWGA01. Any feature added after the freeze must be added to `status.md` with user approval, impact on the demo, privacy/security implications, acceptance criteria, and a decision whether to defer it until post-V1. UI redesign and new feature work belong to the post-V1 phases after HWGA08 passes on the Nothing Phone 2a.
