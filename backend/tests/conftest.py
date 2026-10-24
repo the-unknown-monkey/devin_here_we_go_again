@@ -83,5 +83,7 @@ def issued_token(session):
     session.flush()
     token = generate_token()
     session.add(AuthToken(user_id=user.id, token_hash=hash_token(token, TEST_PEPPER)))
-    session.flush()
+    # Commit so domain-service rollbacks (e.g. after a 422 DomainError)
+    # can't wipe the still-uncommitted token row mid-test.
+    session.commit()
     return token

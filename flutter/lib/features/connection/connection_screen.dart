@@ -4,6 +4,7 @@ import '../../core/api/api_client.dart';
 import '../../core/api/token_store.dart';
 import '../../app/app.dart';
 import '../auth/token_screen.dart';
+import '../home/home_screen.dart';
 
 enum _Status { idle, loading, ok, error }
 
@@ -142,6 +143,17 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             onAction: _checkMe,
           ),
           const SizedBox(height: 24),
+          if (_meStatus == _Status.ok)
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => HomeScreen(apiClient: widget.apiClient),
+                ),
+              ),
+              icon: const Icon(Icons.today_outlined),
+              label: const Text('Open today'),
+            ),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _openTokenScreen,
             icon: const Icon(Icons.badge_outlined),

@@ -31,6 +31,11 @@ class GoalRepository:
             ).scalars()
         )
 
+    def get_for_user(self, user_id: uuid.UUID, goal_id: uuid.UUID) -> Goal | None:
+        return self.session.execute(
+            select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)
+        ).scalar_one_or_none()
+
     def add(self, goal: Goal) -> Goal:
         self.session.add(goal)
         self.session.flush()
