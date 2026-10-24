@@ -3,8 +3,8 @@
 - **Project:** Here We Go Again (HWGA)
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
-- **Last inspected HEAD:** `1194963` (`feat(hwga): scaffold Flutter app shell and authenticated phone connection (HWGA03)`)
-- **Overall Progress:** 4 / 9 V1 phases completed
+- **Last inspected HEAD:** `f24912b` (`feat(hwga): implement baselines, modes, and Rule of 3 goal lifecycle (HWGA04)`)
+- **Overall Progress:** 5 / 9 V1 phases completed
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -46,7 +46,7 @@
 | **HWGA01** | Decisions & contracts | [x] Completed | Docs review only (no code checks applicable) | 2026-10-25 | `fe7f8cd` | HWGA02 |
 | **HWGA02** | Backend foundation | [x] Completed | 11 passed, 0 failed, 0 skipped (`cd backend && uv run pytest tests -q -ra`) | 2026-10-25 | `9551e0d` | HWGA03 |
 | **HWGA03** | Flutter foundation & connection | [x] Completed | 11 passed, 0 failed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`); backend 13 passed (`uv run pytest tests -q -ra`) | 2026-10-25 | `1194963` | HWGA04 |
-| **HWGA04** | Baselines & Rule of 3 | [ ] Planned | | | | HWGA05 |
+| **HWGA04** | Baselines & Rule of 3 | [x] Completed | 27 passed, 0 failed (`cd backend && uv run pytest tests/test_events.py tests/test_modes.py tests/test_goals.py -q -ra`); full backend 40 passed; Flutter: format clean, `No issues found!`, 18 passed | 2026-10-25 | `f24912b` | HWGA05 |
 | **HWGA05** | Sensory Moment Vault | [ ] Planned | | | | HWGA06 |
 | **HWGA06** | Nightly Receipt | [ ] Planned | | | | HWGA07 |
 | **HWGA07** | Morning Directive & recap chain | [ ] Planned | | | | HWGA08 |
@@ -151,7 +151,26 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - `.env` created locally (gitignored) with a generated `AUTH_TOKEN_PEPPER`; token lives in device secure storage at runtime.
   - Permission runtime requests deferred to HWGA05 capture UI (scaffolding only, per phase).
 
-### Phase HWGA04 — _pending_
+### Phase HWGA04: Daily Human Baselines, Modes & Rule of 3
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `f24912b` (`feat(hwga): implement baselines, modes, and Rule of 3 goal lifecycle (HWGA04)`)
+- **Test results:** backend named tests `27 passed, 0 failed` (`cd backend && uv run pytest tests/test_events.py tests/test_modes.py tests/test_goals.py -q -ra`); full suite `40 passed` (`uv run pytest tests -q -ra`). Flutter `18 passed, 0 failed`; `dart format --set-exit-if-changed lib test` clean (exit 0); `flutter analyze` → `No issues found!` (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`).
+- **Commands run + observed output:**
+  - `docker compose up -d db-test` → `backend-db-test-1` already running (orphan-container warning only; unrelated compose projects untouched).
+  - First pytest run: 23 passed / 4 failed — root causes found and fixed: `issued_token` fixture only flushed, so a service `rollback()` after a 422 deleted the token row mid-test (now commits); `+` in ISO `from`/`to` needed query encoding (test now uses `params=`).
+  - Rerun → `27 passed in 1.55s`; full suite `40 passed in 1.78s`.
+  - `dart format` reformatted 5 files on first pass; rerun clean. `flutter analyze` initially flagged null-aware map syntax + a `_post` cast + non-callable MockClient in tests — fixed; final `No issues found!`, `+18: All tests passed!`
+- **Findings / deliverables:**
+  - Backend: `app/domain/errors.py` (DomainError → locked ErrorResponse codes); `app/services/{events,modes,goals}.py`; `app/db/repositories/modes.py`; routers `events.py` (`POST /events` 201/200-on-replay, `GET /timeline?from=&to=` defaulting to the user's local day), `mode.py` (`GET`/`POST /mode`), `goals.py` (`GET`/`POST /goals`, `/complete`, `/retire`); wired in `main.py`.
+  - `/events` accepts CONFIRMATION (kind required), QUIET_MOMENT, MODE_TRANSITION (delegates to ModeService); `MEDIA_CAPTURED` rejected 422 — created by the media pipeline in HWGA05. Idempotent on `idempotency_key` (pre-check + IntegrityError race fallback).
+  - Modes: same-mode re-entry and occurred_at-before-start rejected `422 INVALID_MODE_TRANSITION`; durations derived deterministically (closed interval bounds; open interval elapsed at read).
+  - Rule of 3: exact D14 mechanism — `SELECT ... FOR UPDATE` on the user row + `ACTIVE` count, `409 GOAL_CAP_REACHED` at 3; verified by threaded concurrent-add test (exactly one winner). `age_days` computed at read from `created_at` in `users.timezone`.
+  - Flutter: `core/api/models.dart` (EventItem/GoalItem/ModeIntervalItem); ApiClient POST/GET-list support + typed methods (network retry reuses the same idempotency key); features `baselines/` (one-tap chips), `modes/` (mode card + switch), `goals/` (list/add/complete/retire, GOAL_CAP_REACHED snackbar, server `age_days` rendering), `timeline/` (day view), `home/` (Today screen); ConnectionScreen gains an "Open today" entry after auth.
+  - Missing confirmations are shown only as an honest empty state; PURE_FUN_RECOVERY is presented as a positive mode ("Rest & fun"); no streak/shame UI.
+- **Limitations / unresolved:**
+  - `GET /timeline` returns `"media": []` until HWGA05 exists.
+  - No phone smoke run this session (device path unchanged from HWGA03; full acceptance is HWGA08).
 ### Phase HWGA05 — _pending_
 ### Phase HWGA06 — _pending_
 ### Phase HWGA07 — _pending_
