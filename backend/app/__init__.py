@@ -1,0 +1,1 @@
+"""HWGA backend application package."""
