@@ -10,7 +10,8 @@ This documentation set is the source of truth for the **Here We Go Again (HWGA)*
 4. [`implementation.md`](implementation.md) — planned repository layout (illustrative), local environment, setup verification, phase↔file matrix, and test strategy.
 5. [`status.md`](status.md) — current decisions, phase status, observed environment, and evidence. This file records actual state only.
 6. [`phases/`](phases/) — self-contained phase specifications with copy-ready prompts for new coding-agent conversations.
-7. `runbook.md` — intentionally not created until HWGA08 demo commands have been executed and verified.
+7. `runbook.md` — created after HWGA08 verification; only commands actually run.
+8. [`v2/`](v2/) — V2 documentation set (home-screen widgets, pipeline surface, on-demand generation): same method, own TRD/contracts/implementation/status/phases. Approved scope seeds: D26/D27.
 
 ## Document Governance
 
