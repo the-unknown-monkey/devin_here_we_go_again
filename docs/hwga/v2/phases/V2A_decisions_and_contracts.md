@@ -17,8 +17,10 @@ Resolve every open technical question in `implementation_v2.md` §3 with **real 
 
 ## 3. Decisions to record in `status_v2.md`
 
+Record each as **V2-D02…V2-D05** in `status_v2.md` (rows pre-created; V2-D06 `internal/run` exposure/semantics may also be decided here at contract lock):
+
 - Bridge mechanism (package vs native) + rationale
-- Token access path (direct native read vs mirrored via bridge) + fallback when absent
+- Token access path (direct native read vs mirrored via bridge) + fallback when absent — **a failed readability probe must produce an explicitly recorded fallback decision, not an improvised workaround**
 - Base-URL handoff + cold-install fallback
 - Refresh model (tap-driven / periodic / app-resume push)
 - Lock `contracts_v2.md`: WidgetState fields, `/widget/state`, `/pipeline/status`, deep-link table
@@ -40,7 +42,7 @@ Pre-flight (run first, paste output):
 
 Read docs/hwga/status.md (esp. D26/D27 + HWGA08 evidence), docs/hwga/v2/README.md, trd_v2.md, contracts_v2.md (DRAFT), implementation_v2.md, status_v2.md, and this phase file. This phase is docs + read-only probes — no feature code.
 
-Run the four probes in §2 on the real device/environment and record verbatim output in status_v2.md. Verify library APIs against installed versions (flutter_secure_storage source, resolved home_widget version if evaluated). Do not assume APIs from memory.
+Run the four probes in §2 on the real device/environment and record verbatim output in status_v2.md. Verify library APIs against installed versions (flutter_secure_storage source, resolved home_widget version if evaluated). Do not assume APIs from memory. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Record the §3 decisions with my approval, lock contracts_v2.md, then apply the Two-Step Commit Protocol and push origin main. Stop at the phase boundary.
 ```

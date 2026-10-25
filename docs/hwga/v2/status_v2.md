@@ -11,7 +11,11 @@
 | ID | Decision question | Approved decision | Rationale |
 |---|---|---|---|
 | **V2-D01** | V2 scope? | D27 widgets (quick-taps + mode/today hook) + D26 (pipeline surface + on-demand generation) — all user-approved during HWGA08 | User requests 2026-10-25 |
-| _V2A resolves:_ | bridge mechanism, token mirroring, base-URL handoff, contract lock | _pending_ | |
+| **V2-D02** | Bridge mechanism (`home_widget` vs fully native)? | _pending — V2A_ | |
+| **V2-D03** | Token access path (direct native read vs mirrored via bridge) + fallback when absent? | _pending — V2A_ | |
+| **V2-D04** | Base-URL handoff + cold-install fallback? | _pending — V2A_ | |
+| **V2-D05** | Refresh model (tap-driven / periodic / app-resume push)? | _pending — V2A_ | |
+| **V2-D06** | `internal/run` exposure path, regenerate semantics + cooldown? | _pending — V2E (contract question raised in contracts_v2 §2; may be decided at V2A lock)_ | |
 
 ## 2. Phase Status Ledger
 

@@ -180,7 +180,7 @@ Verified facts about the actual code/environment, recorded as they are discovere
 | Docker | Client + engine 29.1.2; disposable `postgres:17-alpine` on `127.0.0.1` verified (PostgreSQL 17.7). Docker Desktop may wedge in `stopped` state — kill `Docker Desktop`/`com.docker.*` processes and relaunch | HWGA00 |
 | Device | Nothing Phone 2a = serial `000563429001789`, `model:A142`, `product:PacmanIND`, authorized `device`; `adb reverse tcp:<port> tcp:<port>` confirmed — dev route is USB reverse, phone uses `http://localhost:<port>` | HWGA00 |
 | ngrok | 3.39.11-msix on PATH; authtoken stored at `%LOCALAPPDATA%\ngrok\ngrok.yml` (config check valid). Fortinet TLS interception on the normal network blocked the dashboard — hotspot workaround used; possible demo-time tunnel risk | HWGA00 |
-| Locked config | API port **8000** (`127.0.0.1` bind, `adb reverse tcp:8000 tcp:8000`); dev Postgres host port **55432**, disposable test Postgres **55433**; locks = `uv.lock` + `pubspec.lock`; ORM = SQLAlchemy 2.x + Alembic; scheduler = APScheduler | HWGA01 |
+| Locked config | API port **8000** (`127.0.0.1` bind, `adb reverse tcp:8000 tcp:8000`); dev Postgres host port **55532**, disposable test Postgres **55533** (HWGA02 user-approved substitutes; `docker-compose.yml` + `runbook.md` are authoritative); locks = `uv.lock` + `pubspec.lock`; ORM = SQLAlchemy 2.x + Alembic; scheduler = APScheduler | HWGA01 |
 
 ## 10. Verification Policy
 

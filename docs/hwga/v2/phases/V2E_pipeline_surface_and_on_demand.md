@@ -18,7 +18,7 @@ Give the user (a) a screen listing what the pipeline produced and its status, an
 
 ## 3. Rules (hard)
 
-- On-demand must not weaken idempotency or stale rules: same `(user, period_type, period_start)` still dedupes; a regenerate only happens through the contract's stale path or an explicit `internal/run` — decide + record whether `internal/run` force-regenerates (mark stale then generate) in V2E and document it.
+- On-demand must not weaken idempotency or stale rules: same `(user, period_type, period_start)` still dedupes; a regenerate only happens through the contract's stale path or an explicit `internal/run` — follow the recorded decision (V2-D06) on whether `internal/run` force-regenerates (mark stale then generate), its exposure path, and its cooldown/rate-limit; if V2-D06 is unresolved, decide + record it before implementing triggers.
 - Directive same-day uniqueness stands (contract); "refresh directive" either shows the stored one or follows the recorded decision — never a silent second directive.
 - Status badges must be honest: FALLBACK is not dressed as GENERATED; FAILED shows a retry affordance.
 - No pipeline internals leak: row shows status/stale/timestamps/evidence ids only — no prompts, no raw context.
@@ -43,7 +43,7 @@ Pre-flight (run first, paste output):
   git branch --show-current
   git status --short
 
-Read docs/hwga/v2/ contracts_v2.md, implementation_v2.md, status_v2.md, V1 contracts.md §3-4, and inspect the real code: app/services/{recaps,directives}.py, app/api/routers/{recaps,directive}.py, lib/features/recaps/, lib/core/api/.
+Read docs/hwga/v2/ contracts_v2.md, implementation_v2.md, status_v2.md, V1 contracts.md §3-4, and inspect the real code: app/services/{recaps,directives}.py, app/api/routers/{recaps,directive}.py, lib/features/recaps/, lib/core/api/. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Deliverable: GET /pipeline/status (side-effect-free PipelineStatusItem rows: today's receipt, today's directive, current week), a Flutter pipeline screen with honest GENERATED/FALLBACK/FAILED/PENDING badges + stale markers + tap-through, and user-facing generate-now actions reusing lazy GET /recaps and POST /internal/run/{daily|weekly} — never a parallel pipeline. Record and document the chosen internal/run regenerate semantics; directive same-day uniqueness per contract.
 

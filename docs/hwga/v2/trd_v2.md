@@ -49,4 +49,20 @@ Same policy as V1: phase-local checks required, full campaign in V2F. Widget acc
 
 ## 7. Coding-Agent Rules
 
-All V1 rules (`../trd.md` §8) apply verbatim. V2 addition: **verify widget/platform APIs against installed dependency versions before coding** — `home_widget` (or native equivalents) have versioned APIs; check the resolved version in `pubspec.lock`/Gradle files, never assume names from memory.
+All V1 rules (`../trd.md` §8) apply verbatim. V2 additions:
+
+- **Verify widget/platform APIs against installed dependency versions before coding** — `home_widget` (or native equivalents) have versioned APIs; check the resolved version in `pubspec.lock`/Gradle files, never assume names from memory. If `home_widget` (or any new package) is adopted, pin a version published ≥7 days and record the resolved version plus the exact API surface used in `status_v2.md`.
+- **Device proof is user-confirmed only.** Any step requiring the Nothing Phone 2a (taps, deep-links, offline, token rotation) is verified by the user executing and reporting; emulator results never count as device proof, and an agent must never self-certify a manual step.
+- **Fakes are for unit tests only.** No fake HTTP layer may substitute for a real `POST /events`/`POST /mode` during device verification; injected fakes exist solely to keep Dart bridge logic platform-free in `flutter test`.
+- **No dishonest widget state.** No persistent "sending"/optimistic state that survives a failed call, no swallowed broadcast-receiver failures, no cached success painted over an error.
+- **No unapproved platform surface.** No new manifest permissions, foreground services, scheduled workers, or additional packages (`workmanager`, background-fetch, etc.) without a decision recorded in `status_v2.md` and user approval.
+
+## 8. Zero-Hallucination Register (V2)
+
+Verified facts about the actual code/environment discovered during V2. Agents must consult this table (plus `implementation_v2.md` §1 anchors) before relying on names, paths, versions, or commands; every phase appends what it verified. Entries must come from real inspection, never assumption.
+
+| Area | Verified fact | Source phase |
+|---|---|---|
+| Postgres ports | Dev DB `127.0.0.1:55532`, disposable test DB `127.0.0.1:55533` (tmpfs, `db-test` service). Note: V1 `trd.md` §9's older `55432`/`55433` entry was superseded at HWGA02 — compose + runbook are authoritative | Doc audit 2026-10-25 |
+| V1 tree anchors | See `implementation_v2.md` §1 — verified against the real tree 2026-10-25 | Doc audit |
+| _V2A appends:_ | token-storage readability, `home_widget` resolved version + API surface, base-URL handoff mechanism, refresh cadence | _pending_ |

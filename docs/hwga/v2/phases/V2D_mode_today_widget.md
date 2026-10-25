@@ -28,7 +28,7 @@ A widget showing the current mode (flip between LOCKED_IN / PURE_FUN_RECOVERY vi
 
 ## 5. Exit Criteria
 
-- Green gates + device evidence in `status_v2.md`
+- Green gates + device evidence in `status_v2.md`. Device proof requires the user executing steps on the A142 and reporting — emulator results and agent self-certification do not count.
 - Two-Step Commit Protocol → push
 
 ## 6. Copy-Paste Prompt
@@ -41,7 +41,7 @@ Pre-flight (run first, paste output):
   git status --short
   %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe devices
 
-Read docs/hwga/v2/ docs + status_v2.md (V2A decisions, V2C evidence) and inspect the real widget plumbing added in V2C plus lib/app/app.dart routing and features/recaps/. Verify any APIs against installed versions.
+Read docs/hwga/v2/ docs + status_v2.md (V2A decisions, V2C evidence) and inspect the real widget plumbing added in V2C plus lib/app/app.dart routing and features/recaps/. Verify any APIs against installed versions. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Deliverable: second home-screen widget — current mode pill with honest flip (POST /mode), one hook line sourced from /widget/state fields in contract priority order (directive clause, receipt-ready, oldest goal age), deep-links (hwga:// URIs) resolving cold-start into ReceiptScreen/HomeScreen/GoalsScreen/TokenScreen. One line max, ellipsized; counts+chips+one-line only — no narrative/insights/media on the home surface.
 

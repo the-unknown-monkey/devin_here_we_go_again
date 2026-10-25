@@ -21,7 +21,7 @@ A resizable home-screen widget with chips for WATER, FOOD_CLEAN, STRETCH, POSTUR
 
 - Fresh `idempotency_key` UUID **per user tap** — double-taps rely on server idempotency anyway; keys are not reused.
 - Optimistic chip feedback allowed only as a transient "sending" state — a failed call must visibly undo it. No fake logs.
-- RemoteViews constraints: no custom fonts/animations; chips must meet touch-target minimums; respect dark/light theme.
+- RemoteViews constraints: no custom fonts/animations; chips must meet touch-target minimums (≥48dp); respect dark/light theme. Chip grid/arrangement within those constraints is the implementer's choice — record a layout screenshot in the phase evidence; it is not free license for animated/custom-rendered hacks.
 - No new manifest permissions. Widget must not start foreground services or schedule workers.
 - Cold-install path honored (V2A decision): widget works (or degrades honestly) even if the Flutter app was never opened.
 
@@ -33,7 +33,7 @@ A resizable home-screen widget with chips for WATER, FOOD_CLEAN, STRETCH, POSTUR
 
 ## 5. Exit Criteria
 
-- All checks pass; device tap → DB event proven with real output in `status_v2.md`
+- All checks pass; device tap → DB event proven with real output in `status_v2.md`. Device proof requires the user executing steps on the A142 and reporting — emulator results and agent self-certification do not count.
 - Two-Step Commit Protocol → push
 
 ## 6. Copy-Paste Prompt
@@ -46,7 +46,7 @@ Pre-flight (run first, paste output):
   git status --short
   %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe devices
 
-Read docs/hwga/v2/ (esp. locked contracts_v2.md, implementation_v2.md, status_v2.md V2A decisions) and inspect the real code first: flutter/android/app/src/main/ (manifest, MainActivity), lib/core/{api,config}/, backend widget/state endpoint. Use only the bridge/token path decided in V2A; verify any package APIs against the resolved version — never assume names.
+Read docs/hwga/v2/ (esp. locked contracts_v2.md, implementation_v2.md, status_v2.md V2A decisions) and inspect the real code first: flutter/android/app/src/main/ (manifest, MainActivity), lib/core/{api,config}/, backend widget/state endpoint. Use only the bridge/token path decided in V2A; verify any package APIs against the resolved version — never assume names. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Deliverable: home-screen quick-taps widget (WATER/FOOD_CLEAN/STRETCH/POSTURE_RESET/WALK/QUIET_MOMENT) that POSTs /events with a fresh UUID idempotency_key per tap, shows sending/confirm/failure honestly, renders today counts from /widget/state, handles no-token and cold-install per V2A decisions. RemoteViews-safe UI, no new permissions, no background services.
 

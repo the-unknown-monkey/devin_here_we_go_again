@@ -45,7 +45,7 @@ Pre-flight (run first, paste output):
   git branch --show-current
   git status --short
 
-Read docs/hwga/v2/ contracts_v2.md (LOCKED), implementation_v2.md, status_v2.md, and V1 contracts.md + trd.md. Inspect the real backend: app/api/routers/, app/services/, app/db/repositories/, app/schemas/contracts.py — reuse existing repository/service methods; never recompute age_days or durations differently.
+Read docs/hwga/v2/ contracts_v2.md (LOCKED), implementation_v2.md, status_v2.md, and V1 contracts.md + trd.md. Inspect the real backend: app/api/routers/, app/services/, app/db/repositories/, app/schemas/contracts.py — reuse existing repository/service methods; never recompute age_days or durations differently. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Implement GET /widget/state exactly per the locked contract: bearer-gated, side-effect-free (never triggers generation), logged-kinds-only confirmations, stored-row statuses, V1 ErrorResponse. Add WidgetState to app/schemas/contracts.py, app/services/widget_state.py, app/api/routers/widget.py wired in app/main.py, and backend/tests/test_widget_state.py.
 

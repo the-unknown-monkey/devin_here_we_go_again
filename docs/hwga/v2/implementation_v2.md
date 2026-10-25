@@ -47,8 +47,10 @@ backend/tests/
 
 ## 3. Open Technical Questions for V2A (must be answered with real probes, not assumptions)
 
-1. **Bridge:** `home_widget` package vs fully native. Probe: can Kotlin read `hwga_auth_token` from the `flutter_secure_storage` shared-prefs file on the A142? (It uses EncryptedSharedPreferences on Android — natively readable, but verify.) If unreadable → token must be mirrored via a bridge at app runtime.
-2. **Base URL on native side:** `HWGA_API_BASE_URL` is compile-time-only in Dart. Options: `MethodChannel` handoff, `BuildConfig` field, or `home_widget` data store. Decide + record.
+Each question below — **including which fallback branch was taken when a probe fails** — is a required recorded decision in `status_v2.md` (V2-D02…V2-D05). A failing probe never produces a guessed workaround; it produces a recorded fallback decision.
+
+1. **Bridge:** `home_widget` package vs fully native. Probe: can Kotlin read `hwga_auth_token` from the `flutter_secure_storage` shared-prefs file on the A142? (It uses EncryptedSharedPreferences on Android — natively readable, but verify.) If unreadable → token must be mirrored via a bridge at app runtime — record this fallback explicitly.
+2. **Base URL on native side:** `HWGA_API_BASE_URL` is compile-time-only in Dart. Options: `MethodChannel` handoff, `BuildConfig` field, or `home_widget` data store. Decide + record, **including the honest cold-install fallback** when the app was never opened.
 3. **Interactive taps:** `home_widget` interactivity vs native `PendingIntent` broadcast → Kotlin-side POST. Android 15 supports interactive RemoteViews; verify minSdk (`flutter` default) and behavior on Nothing OS.
 4. **Update cadence:** `updatePeriodMillis` floor is 30 min; whether tap-driven refresh + app-resume push suffices without a background worker.
 

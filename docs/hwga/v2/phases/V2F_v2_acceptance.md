@@ -34,7 +34,7 @@ Pre-flight (run first, paste output):
   git status --short
   %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe devices
 
-Read all docs/hwga/v2/ docs including every status_v2.md evidence entry, V1 status.md §5, and this phase file. Treat any check without recorded evidence as unverified.
+Read all docs/hwga/v2/ docs including every status_v2.md evidence entry, V1 status.md §5, and this phase file. Treat any check without recorded evidence as unverified. If any doc contradicts live code or installed dependency APIs, stop, record the discrepancy in status_v2.md, and ask before proceeding.
 
 Run the repository's real commands (backend pytest on disposable DB; flutter format/analyze/test/build). Coordinate every manual widget step on my Nothing Phone 2a — I execute and report; never claim acceptance without my confirmation. Verify widget security (401 unauth, no token leaks), privacy surface (counts/chips/one line only), offline honesty, idempotent taps, cold-start deep-links, and token-rotation degradation. Update runbook.md only with verified commands after I confirm.
 
