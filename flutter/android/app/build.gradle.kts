@@ -28,6 +28,17 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // V2-D04: compiled-in widget base URL — same value as the
+        // HWGA_API_BASE_URL dart-define, passed via env var at build time.
+        buildConfigField(
+            "String",
+            "HWGA_API_BASE_URL",
+            "\"${System.getenv("HWGA_API_BASE_URL") ?: "http://127.0.0.1:8000"}\"",
+        )
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

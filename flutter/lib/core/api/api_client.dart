@@ -104,6 +104,11 @@ class ApiClient {
     );
   }
 
+  /// GET /widget/state — locked V2 aggregate (contracts_v2.md §2). Returns
+  /// the raw JSON map; widgets consume it, the app pushes it to them.
+  Future<Map<String, dynamic>> getWidgetState() =>
+      _get('/widget/state', authenticated: true);
+
   // ---- HWGA05 media routes (contracts.md §3) ----
 
   /// POST /media — multipart upload → `MediaAssetMeta`. Not retried: the

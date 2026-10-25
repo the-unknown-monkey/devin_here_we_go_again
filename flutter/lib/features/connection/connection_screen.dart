@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/token_store.dart';
+import '../../core/widget_bridge.dart';
 import '../../app/app.dart';
 import '../auth/token_screen.dart';
 import '../home/home_screen.dart';
@@ -16,10 +17,15 @@ class ConnectionScreen extends StatefulWidget {
     super.key,
     required this.apiClient,
     required this.tokenStore,
+    this.launchUriProvider,
   });
 
   final ApiClient apiClient;
   final TokenStore tokenStore;
+
+  /// Source of the cold-start deep-link URI (widget contract §3); injectable
+  /// for tests. Defaults to the native launch intent.
+  final Future<String?> Function()? launchUriProvider;
 
   @override
   State<ConnectionScreen> createState() => _ConnectionScreenState();
@@ -35,7 +41,19 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshTokenState().then((_) => _checkAll());
+    _refreshTokenState().then((_) {
+      _checkAll();
+      _routeLaunchUri();
+    });
+  }
+
+  /// Widget auth-required state deep-links to `hwga://auth`; with no saved
+  /// token it lands straight on the token screen (contracts_v2.md §3).
+  Future<void> _routeLaunchUri() async {
+    final uri = await (widget.launchUriProvider ?? WidgetBridge.launchUri)();
+    if (uri == 'hwga://auth' && !_hasToken && mounted) {
+      await _openTokenScreen();
+    }
   }
 
   Future<void> _refreshTokenState() async {
