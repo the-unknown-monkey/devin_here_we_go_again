@@ -37,6 +37,8 @@
 | **D22** | Gemini failure policy? | Timeout-bounded, ≤2 retries → deterministic fallback persisted as `FALLBACK`; `FAILED` only for observable persistence errors, never silent | Approved HWGA01 (user) |
 | **D23** | Missing-data policy? | Missing = unknown, not negative; `DailyContext` omits unlogged kinds; narrative never asserts non-occurrence | Approved HWGA01 (user) |
 | **D24** | V1 UI baseline? | Material 3 theme, material_icons, standard page transitions + AnimatedSwitcher/implicit animations for capture confirm/mode change/recap reveal; no extra animation packages in V1 | Approved HWGA01 (user) |
+| **D25** | Gemini model config? | New env var `GEMINI_MODEL` added to the locked env-name set (default `gemini-3.5-flash`). Gemini 2.x model names deprecated upstream during HWGA08; `gemini-3.8-flash`/`3.6` returned 503 high-demand, `3.7` exceeded the 20s timeout; `3.5` verified <10s. Provider `max_output_tokens` raised 1500→8192 (thinking tokens consume the output budget and truncated JSON → INVALID_OUTPUT) | Recorded HWGA08 — defect fix within phase scope |
+| **D26** | Post-V1 features approved during HWGA08? | (a) Dedicated pipeline/results surface listing generation status per period (receipt/directive/weekly, GENERATED vs FALLBACK, evidence); (b) on-demand generation — user may trigger receipt/directive at any time using data accumulated so far, not only at fixed evening/morning times. **Deferred to POSTV1** — no V1 code changes; existing lazy `GET /recaps` + `POST /internal/run/*` remain the V1 mechanism | Approved by user 2026-10-25; deferred per phase boundary |
 
 ## 2. Phase Status Ledger
 
@@ -50,7 +52,7 @@
 | **HWGA05** | Sensory Moment Vault | [x] Completed | 15 passed, 0 failed (`cd backend && uv run pytest tests/test_media.py -q -ra`); full backend 55 passed; Flutter: format clean, `No issues found!`, 24 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `a066c41` | HWGA06 |
 | **HWGA06** | Nightly Receipt | [x] Completed | 20 passed, 0 failed (`cd backend && uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra`); full backend 75 passed; Flutter: format clean, `No issues found!`, 29 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `e126791` | HWGA07 |
 | **HWGA07** | Morning Directive & recap chain | [x] Completed | 22 passed, 0 failed (`cd backend && uv run pytest tests/test_directive.py tests/test_weekly_recap.py -q -ra`); full backend 97 passed; Flutter: format clean, `No issues found!`, 35 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `599c43a` | HWGA08 |
-| **HWGA08** | Final V1 acceptance & phone demo | [ ] Planned | | | | Done |
+| **HWGA08** | Final V1 acceptance & phone demo | [~] In progress | Backend 97 passed; Flutter format/analyze clean, 35 passed; APK built+installed on A142 via ngrok tunnel; live Gemini receipt GENERATED | | | Done |
 | **Post-V1** | Refinement & feature discovery | Deferred | | | | — |
 
 ## 3. Two-Step Commit Protocol
@@ -238,7 +240,26 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - Gemini path never executed live (no `GEMINI_API_KEY` in test env); all provider seams mocked — real-model quality verified only at HWGA08.
   - VOICE STT still not wired; APScheduler (D21) trigger still manual via `/internal/run/*`.
   - In-app directive card renders only on HomeScreen open — no FCM/push per D05.
-### Phase HWGA08 — _pending_
+### Phase HWGA08: Final V1 Acceptance & Phone Demo — _in progress_
+- **Status:** [~] In progress (acceptance checks running; device journey partially verified by user screenshots)
+- **Execution date:** 2026-10-25, Asia/Kolkata
+- **Commit:** `9b4d1b5` (`fix(hwga): resolve V1 acceptance findings in Android build and Gemini provider (HWGA08)`) — interim commit while device acceptance continues
+- **Test results:** backend `97 passed, 0 failed` (`uv run pytest tests -q -ra`); Flutter `dart format --set-exit-if-changed lib test` clean, `flutter analyze` → `No issues found!`, `flutter test` → `+35: All tests passed!`; `flutter build apk --debug` → built after fix below
+- **Commands run + observed output:**
+  - `docker compose ps` → `backend-db-1` (127.0.0.1:55532) + `backend-db-test-1` (127.0.0.1:55533, tmpfs) healthy; test isolation confirmed (conftest pins TEST_DATABASE_URL + hard guard).
+  - `adb devices` → `000563429001789 device product:PacmanIND model:A142` (Nothing Phone 2a). Note: `adb` not on this shell's PATH — invoked via `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`.
+  - **Defect 1 — Android build failed:** `permission_handler_android 14.1.0` build.gradle.kts uses `kotlin {}` without applying the Kotlin plugin (only resolves under AGP 9 built-in Kotlin; project uses AGP 8.11.1 + KGP 2.2.20). Fixed by `permission_handler` 13.0.2→`^12.0.3` → resolves `permission_handler_android 13.0.1` (Java-only). Rerun → `√ Built app-debug.apk` (~98s), all checks green.
+  - `uv run alembic upgrade head` → `5e1d2551dffb (head)`; uvicorn on 127.0.0.1:8000; `adb reverse tcp:8000 tcp:8000` verified (mapping drops on device reconnect — re-run after replug; caused one "Connection refused" on phone).
+  - `flutter install -d 000563429001789 --debug` → installed; new bearer token provisioned via `provision-token` (reinstall wipes secure storage).
+  - **ngrok demo gate (user-approved):** `ngrok http 8000` → `https://stew-wisdom-fanfare.ngrok-free.dev` → verified through the tunnel: `/health` 200, `/me` no token → 401 UNAUTHORIZED, `/me` wrong token → 401, `/docs` + `/openapi.json` → 404. Only port 8000 tunneled; Postgres bound 127.0.0.1 only, never exposed.
+  - Phone journey over 5G via ngrok (user screenshots): token auth OK; baselines/mode/goals logged; photo + ambient 10s + voice captured into timeline; directive card `FALLBACK` "A simple nudge"; weekly screen `FALLBACK` "Fact recap" with honest "6 days have no receipt — unknown, and that's okay". One transient `HTTP 503` toast — not from the API (all backend requests 2xx/401/404); attributed to ngrok free-tier.
+  - **Defect 2 — Gemini path:** running uvicorn kept the pre-key env (restart bind failure WinError 10048; fixed by killing the port owner). Then: `gemini-2.5-flash` (default) → 404 deprecated; `3.8`/`3.6` → 503 high-demand; `3.7` → 58s thinking-time > 20s timeout / gateway 504; **`gemini-3.5-flash` → 200 in ~9.8s** but `INVALID_OUTPUT` (MAX_TOKENS: thinking tokens consumed the 1500 cap) → raised `max_output_tokens` to 8192 → `STOP` + valid JSON. Added `GEMINI_MODEL` env (D25).
+  - Live generation verified: `GET /recaps?period=DAILY` after backfill-marked-stale → **status GENERATED**, grounded narrative + 2 insights + 2 highlights. Weekly via real model → guard rejected candidate (`weekly_narrative_contains_unsupported_claims`) → deterministic FALLBACK persisted — guardrail working as designed on live output. Directive stays FALLBACK (generated pre-key; per contract it never regenerates same-day).
+- **Limitations / unresolved:**
+  - Phone journey manual confirmation still in progress (goals cap/complete, media delete, offline/retry, text scaling to be verified with user).
+  - One transient ngrok 503 observed (free tier).
+  - Weekly recap remains FALLBACK by guard rejection; directive remains FALLBACK by design.
+  - `gemini-3.5-flash` chosen; demand/deprecation of free-tier models remains a live external risk (now overridable via `GEMINI_MODEL`).
 <!-- Evidence entry template:
 ### Phase HWGAnn: <name>
 - **Status:** [x] Completed / [ ] Blocked
