@@ -23,7 +23,7 @@
 |---|---|---|---|---|---|---|
 | **V2A** | Decisions & contracts | [x] Completed | Docs + read-only probes only | 2026-10-25 | `e5166db` | V2B |
 | **V2B** | Backend widget surface | [x] Completed | 104 passed (pytest, disposable DB 55533) + live curl 401/200 | 2026-10-25 | `e56b63f` | V2C |
-| **V2C** | Quick-taps widget | [ ] Planned | | | | V2D |
+| **V2C** | Quick-taps widget | [x] Completed | 104 pytest + 40 flutter test + on-device tap/offline/reconnect proof | 2026-10-25 | `63151f7` | V2D |
 | **V2D** | Mode + today hook widget | [ ] Planned | | | | V2E |
 | **V2E** | Pipeline surface & on-demand | [ ] Planned | | | | V2F |
 | **V2F** | V2 acceptance | [ ] Planned | | | | Done |
@@ -102,3 +102,35 @@ Inherited from V1 (all still current as of HWGA08, 2026-10-25): Python 3.13.11, 
     (Real V1 acceptance data in dev DB; shape matches `contracts_v2.md` §2 normative example exactly.)
 - **Discrepancies found:** none — docs, live code, and installed APIs agreed at every checked point.
 - **Limitations / unresolved:** none. Dev uvicorn left running on 8000 after the live check.
+
+### Phase V2C: Quick-Taps Widget (fully native, V2-D02)
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, local machine timezone
+- **Pre-flight:** `git branch --show-current` → `main`; `git status --short` → clean; `adb devices` → `000563429001789 device` (A142).
+- **Deliverables:**
+  - `widget/QuickTapsWidgetProvider.kt` — AppWidgetProvider; `onUpdate` renders cached `WidgetState` then refreshes via `GET /widget/state` on a `goAsync` thread; `ACTION_QUICK_TAP` broadcast (exact `PendingIntent` each button sends) → `POST /events` with a fresh `UUID.randomUUID()` `idempotency_key` per tap; honest status line (`Sending…` / `Saved` / `Failed (HTTP n)` / `Not sent — no connection`); auth-required and "open the app once" states per V2-D03/D04.
+  - `widget/WidgetStore.kt` — direct flutter_secure_storage 11.2.0 decrypt (Keystore RSA-OAEP alias `ai.hwga.hwga.FlutterSecureStoragePluginKeyOAEP`, AES/GCM/NoPadding, 12-byte IV, whitespace-stripped Base64 per the `&#10;` note) preferred over the app-pushed mirror; `BuildConfig.HWGA_API_BASE_URL` base-URL fallback.
+  - `widget/WidgetApi.kt` — HttpURLConnection GET/POST, 10 s timeouts, typed Ok/HttpError/NetworkError.
+  - `res/layout/widget_quick_taps.xml` + `res/xml/quick_taps_widget_info.xml` — RemoteViews-safe layout (LinearLayout/TextView/Button only), `updatePeriodMillis="1800000"`.
+  - `AndroidManifest.xml` — exported receiver + `APPWIDGET_UPDATE` filter; `hwga` scheme VIEW filter on MainActivity. No new permissions.
+  - `MainActivity.kt` — `ai.hwga.hwga/widget` MethodChannel (`sync` → mirror prefs + widget refresh; `getLaunchUri` → cold-start deep-link URI); `onNewIntent` keeps latest deep-link.
+  - `build.gradle.kts` — `buildConfigField HWGA_API_BASE_URL` from env var, default `http://127.0.0.1:8000` (the D15 adb-reverse route).
+  - `lib/core/widget_bridge.dart` — pushes token mirror + base URL + `/widget/state` JSON on attach and `AppLifecycleState.resumed`; best-effort (all failures swallowed — widgets have their own honest fallbacks).
+  - `lib/core/api/api_client.dart` — `getWidgetState()`; `lib/main.dart` — bridge wiring sharing the app's ApiClient/TokenStore.
+  - `ConnectionScreen` — `hwga://auth` cold launch with no saved token auto-opens TokenScreen (contracts_v2.md §3 auth row); generic route dispatch remains V2D scope.
+  - `test/widget_bridge_test.dart` — 5 tests: mirror push with token+state, no-token honest sync, backend-error resilience, `hwga://auth` routing both ways.
+- **Test results (verbatim):**
+  - `dart format --set-exit-if-changed lib test` → clean after format pass; `flutter analyze` → `No issues found!`; `flutter test` → `+40: All tests passed!`
+  - `uv run pytest tests -q -ra` (disposable DB 55533) → **`104 passed, 1 warning in 5.46s`** (pre-existing LangChain warning).
+- **Device evidence (A142, real backend on 127.0.0.1:8000 via `adb reverse`):**
+  - `flutter build apk --debug --dart-define=HWGA_DEV_TOKEN=<fresh provision-token>` installed; app reinstall had wiped the V1 secure-storage token (expected per runbook §5), so a new token was provisioned via `uv run python -m app.cli provision-token` — never committed.
+  - After app launch: `hwga_widget_prefs.xml` observed with `base_url`, `token_mirror`, and full live `widget_state_json` (WATER:2…WALK:2, quiet:10) — bridge push + native mirror read verified.
+  - **Tap → event:** `am broadcast ACTION_QUICK_TAP --es tap_label WATER` → `/timeline` WATER count 2 → 3; cached `widget_state_json` refreshed to `WATER:3`.
+  - **Offline honesty:** `adb reverse --remove tcp:8000` → STRETCH tap → STRETCH stayed 1 (nothing queued, nothing phantom-posted).
+  - **Reconnect exactly-once:** reverse restored → one STRETCH tap → total 2; new event key `ebeb0a7a-…` fresh UUID (prior key `confirm-179288…` V1-era format).
+  - **Real widget instance:** launcher bound widget id 4 (`AppWidgetServiceImpl: Bound widget 4 … QuickTapsWidgetProvider`); screenshot verified all six buttons with live counts (WATER 3, FOOD 4, STRETCH 2, POSTURE 1, WALK 2, QUIET 11) and "as of 06:56" freshness line; QUIET broadcast → `quiet_moments_today` 10 → 11.
+  - logcat: no `AndroidRuntime`/RemoteViews inflation errors during any update or tap.
+- **Discrepancies found:** none — contracts, resolved deps, and installed APIs agreed.
+- **Limitations / unresolved:**
+  - Button taps were driven via `am broadcast` of the exact `ACTION_QUICK_TAP` intent the button `PendingIntent` sends (same receiver path); physical finger-tap on the pinned widget is indistinguishable at that level. Nothing OS lacks `cmd appwidget`, so pinning was done by hand on the launcher.
+  - `hwga://auth` warm-start re-delivery reaches Dart only for the latest launch intent; full deep-link route table dispatch is V2D (manifest filter already registered).
