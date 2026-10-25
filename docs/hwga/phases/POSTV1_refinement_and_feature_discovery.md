@@ -34,6 +34,7 @@ After UX refinement or as separately approved, review user feedback and prioriti
 
 1. **Pipeline/results surface:** a dedicated area listing generation status per period — receipt, directive, weekly — including GENERATED vs FALLBACK, timestamps, and linked evidence. Today there is no way to inspect pipeline results in-app.
 2. **On-demand generation:** user-triggered receipt/directive generation at any time, computed from data accumulated so far — not only fixed evening/morning schedule points. V1's lazy `GET /recaps` and authenticated `POST /internal/run/{daily|weekly}` are the existing mechanism; the post-V1 work is a user-facing trigger plus clear "data so far" semantics (idempotency and stale rules unchanged).
+3. **Android home-screen widgets (status.md D27):** (a) quick-taps widget for one-tap baseline logging without opening the app (idempotent `POST /events`); (b) mode + today widget — mode flip and a single rotating hook line (directive clause / "receipt ready" teaser / goal age) deep-linking into the app. Excludes insights, media, chronology, and narrative text: the widget is a home-screen-visible surface, so counts and chips only per the privacy invariant. Requires native AppWidgetProvider (e.g. `home_widget` package) and native-side access to the Keystore-backed bearer token.
 
 ### Copy-Paste Prompt: Feature Planning Conversation
 
