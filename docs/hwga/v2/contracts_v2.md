@@ -1,10 +1,10 @@
 # HWGA V2 Contracts — Additions Only
 
 - **Document ID:** CONTRACTS-HWGA-V2
-- **Status:** **DRAFT** — locked at V2A with user approval
+- **Status:** **LOCKED** — V2A, 2026-10-25, user approved (decisions V2-D02…V2-D06 in `status_v2.md`)
 - **Authority:** V1 [`contracts.md`](../contracts.md) remains the single source for all V1 enums/models/API. This file may ADD surface only; it may not rename, reshape, or relax V1 items.
 
-## 1. New Typed Models (proposed)
+## 1. New Typed Models (locked)
 
 ```python
 class WidgetState(BaseModel):
@@ -42,12 +42,13 @@ class PipelineStatusItem(BaseModel):
     source_recap_ids: List[UUID] # weekly only; empty otherwise
 ```
 
-## 2. New API Surface (proposed)
+## 2. New API Surface (locked)
 
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
 | `GET` | `/widget/state` | single authenticated aggregate for widgets | ~1 KB; no media refs, no narrative; all values server-computed |
 | `GET` | `/pipeline/status` | in-app pipeline surface rows | today's receipt, today's directive, current week roll-up |
+| `POST` | `/generate/{kind}` | user-facing on-demand generation, `kind` ∈ `receipt \| directive \| weekly` | V2-D06: new route; `POST /internal/run/{daily\|weekly}` stays internal-only |
 
 `GET /widget/state` 200 response is exactly the `WidgetState` JSON — normative example:
 
@@ -68,11 +69,15 @@ class PipelineStatusItem(BaseModel):
 
 Nullability: every field except `generated_at`, `today_confirmations`, `quiet_moments_today`, `goals_active`, and `receipt_stale` may be `null`. Clients/widgets must ignore unknown fields (forward-compatible additions only).
 
-On-demand generation uses `POST /internal/run/{daily|weekly}` — a V1-internal route now triggered from user UI. V2A must decide and record: (a) whether it stays under `/internal/` or is re-exposed under a user-facing path in the V2 contract, and (b) its regenerate semantics and cooldown/rate-limit (tap-spam costs real LLM calls). No implementation may choose silently.
+`POST /generate/{kind}` (V2-D06, locked):
+
+- **Semantics:** regenerates the artifact for the **current period** unconditionally, using data accumulated so far ("data so far" semantics — the trigger time does not need to be the period boundary). A regenerated artifact replaces the stored one for the same `(user_id, period_type, period_start)` key and clears its stale flag. `receipt`/`weekly` return `Recap`; `directive` returns `MorningDirective` (V1 models, unmodified).
+- **Cooldown:** max one manual trigger per `kind` per user per 60 s; excess calls return `429` with `ErrorResponse` code `GENERATION_COOLDOWN` (new V2 code, §4).
+- The V1-internal `POST /internal/run/{daily|weekly}` route is unchanged and stays internal; the app UI must call `/generate/...` only.
 
 Everything else the widgets need already exists: `POST /events` (idempotent `idempotency_key`), `GET`/`POST /mode`, `GET /timeline`, `GET /recaps`, `GET /directive/today`.
 
-## 3. Deep-Link Contract (proposed)
+## 3. Deep-Link Contract (locked)
 
 App-internal route names the widgets may open — implemented as Android `PendingIntent` deep-links; each resolves even when the app process is cold:
 
@@ -86,9 +91,15 @@ App-internal route names the widgets may open — implemented as Android `Pendin
 
 Rules: the auth check runs before route resolution on every deep-link — a cold start with a missing/expired token always lands on the Token screen regardless of target. Unknown or malformed `hwga://` URIs fall back to HomeScreen (never crash, never no-op silently in logs-only fashion — show the default screen).
 
-## 4. V2 Error Codes (proposed)
+## 4. V2 Error Codes (locked)
 
-Reuses V1 `ErrorResponse`. No new codes expected; candidates if needed during V2A: `WIDGET_STALE_STATE` (never currently needed — staleness is data, not an error).
+Reuses V1 `ErrorResponse`. One new code added at V2A lock:
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `GENERATION_COOLDOWN` | 429 | `POST /generate/{kind}` triggered again within 60 s for the same kind |
+
+`WIDGET_STALE_STATE` was considered and rejected — staleness is data, not an error.
 
 ## 5. Carried Rules
 

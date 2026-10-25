@@ -65,4 +65,7 @@ Verified facts about the actual code/environment discovered during V2. Agents mu
 |---|---|---|
 | Postgres ports | Dev DB `127.0.0.1:55532`, disposable test DB `127.0.0.1:55533` (tmpfs, `db-test` service). Note: V1 `trd.md` §9's older `55432`/`55433` entry was superseded at HWGA02 — compose + runbook are authoritative | Doc audit 2026-10-25 |
 | V1 tree anchors | See `implementation_v2.md` §1 — verified against the real tree 2026-10-25 | Doc audit |
-| _V2A appends:_ | token-storage readability, `home_widget` resolved version + API surface, base-URL handoff mechanism, refresh cadence | _pending_ |
+| Token storage | `flutter_secure_storage 11.2.0` (pubspec.lock) = plain SharedPreferences `FlutterSecureStorage` + AES/GCM ciphertext (IV-12 prepended); wrapped AES key in `FlutterSecureKeyStorage` prefs; Keystore alias `ai.hwga.hwga.FlutterSecureStoragePluginKeyOAEP`. Natively decryptable in-process; observed on A142 | V2A |
+| Bridge eval | `home_widget` latest stable = 0.10.0 (pub.dev dartdoc); API verified: `saveWidgetData`, `updateWidget`, `registerInteractivityCallback`, `widgetClicked`, `initiallyLaunchedFromHomeWidget`. Not adopted — V2-D02 chose fully native | V2A |
+| Android runtime | Device confirmed Android 15 / API 35; Flutter default `minSdkVersion = 24`; `updatePeriodMillis` platform floor = 30 min | V2A |
+| Base URL | `HWGA_API_BASE_URL` is compile-time-only in Dart; `BuildConfig` field chosen (V2-D04) — only cold-install-safe handoff | V2A |

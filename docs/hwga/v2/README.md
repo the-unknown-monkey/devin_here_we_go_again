@@ -18,7 +18,7 @@ This documentation set follows the same method as V1: blueprint → TRD → cont
 
 | Phase | Objective | Status |
 |---|---|---|
-| [V2A](phases/V2A_decisions_and_contracts.md) | Lock V2 decisions and widget contracts | Planned |
+| [V2A](phases/V2A_decisions_and_contracts.md) | Lock V2 decisions and widget contracts | Completed |
 | [V2B](phases/V2B_backend_widget_surface.md) | Lightweight widget state endpoint + on-demand trigger surface | Planned |
 | [V2C](phases/V2C_quick_taps_widget.md) | Quick-taps widget: one-tap baseline logging without opening the app | Planned |
 | [V2D](phases/V2D_mode_today_widget.md) | Mode + today hook widget: mode flip + rotating hook line deep-linking into the app | Planned |

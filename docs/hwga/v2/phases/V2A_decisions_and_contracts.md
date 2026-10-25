@@ -1,6 +1,6 @@
 # Phase V2A: V2 Decisions, Platform Probes & Contract Lock
 
-- **Phase ID:** V2A | **Branch:** `main` | **Status:** Planned
+- **Phase ID:** V2A | **Branch:** `main` | **Status:** Completed 2026-10-25
 - **Dependency:** V1 accepted; `docs/hwga/v2/` baseline exists
 - **Scope:** docs + read-only probes only. No feature code.
 
