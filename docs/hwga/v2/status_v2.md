@@ -22,7 +22,7 @@
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
 | **V2A** | Decisions & contracts | [x] Completed | Docs + read-only probes only | 2026-10-25 | `e5166db` | V2B |
-| **V2B** | Backend widget surface | [ ] Planned | | | | V2C |
+| **V2B** | Backend widget surface | [x] Completed | 104 passed (pytest, disposable DB 55533) + live curl 401/200 | 2026-10-25 | `e56b63f` | V2C |
 | **V2C** | Quick-taps widget | [ ] Planned | | | | V2D |
 | **V2D** | Mode + today hook widget | [ ] Planned | | | | V2E |
 | **V2E** | Pipeline surface & on-demand | [ ] Planned | | | | V2F |
@@ -79,3 +79,26 @@ Inherited from V1 (all still current as of HWGA08, 2026-10-25): Python 3.13.11, 
   - V2-D02…V2-D06 recorded and user-approved (D02–D05 delegated to agent for "hackathon MVP" context; D06 explicitly chosen: new user-facing route).
   - `contracts_v2.md` → **LOCKED**: `WidgetState`, `PipelineStatusItem`, `GET /widget/state`, `GET /pipeline/status`, `POST /generate/{kind}` semantics + `GENERATION_COOLDOWN` 429, deep-link table, error codes.
 - **Limitations / unresolved:** none blocking V2B. Note: the `&#10;` newline artifact inside stored ciphertext strings is Android's prefs-XML escaping, handled by `getString()`/Base64 decode-with-whitespace — V2C implementation must trim/decode accordingly.
+
+### Phase V2B: Backend Widget Surface (`GET /widget/state`)
+- **Status:** [x] Completed
+- **Execution date:** 2026-10-25, local machine timezone
+- **Pre-flight:** `git branch --show-current` → `main`; `git status --short` → clean (no output).
+- **Deliverables:**
+  - `backend/app/schemas/contracts.py` — `WidgetState` added verbatim per `contracts_v2.md` §1 (V2 section marked; V1 models untouched).
+  - `backend/app/services/widget_state.py` — `WidgetStateService.build(user)`: pure read; reuses `local_day_window`, `EventRepository.list_between`, `ModeService.current` (V1 open-interval `duration_min` derivation), `GoalRepository.list_for_user` + `_age_days` (V1 goal aging), `RecapRepository.get_for_period` (stored status + `stale` flag), `DirectiveRepository.get_for_date`. Missing receipt → `PENDING` + `receipt_stale=false`; unlogged confirmation kinds omitted; `directive_line` collapsed to one line, truncated ≤120 chars. Never generates.
+  - `backend/app/api/routers/widget.py` — `GET /widget/state`, `require_auth` + `get_session`, `DomainError` → `HTTPException` pattern matching V1 routers; wired in `app/main.py`.
+  - `backend/tests/test_widget_state.py` — 7 tests: 401 `UNAUTHORIZED`, empty-state defaults, logged-kinds-only confirmations + day-window isolation, mode + goals (age_days reuse, retired excluded), directive sanitization/truncation, stored receipt status/stale passthrough, side-effect-free (RecapRow/MorningDirectiveRow counts unchanged across a fetch).
+- **Test results (verbatim):**
+  - `docker compose up -d db-test` → `Container backend-db-test-1  Running`.
+  - `uv run pytest tests -q -ra` → **`104 passed, 1 warning in 4.74s`** (sole warning: upstream `LangChainPendingDeprecationWarning`, pre-existing).
+- **Live curl evidence (dev DB on 55532, real provisioned token):**
+  - Incident recorded honestly: first `uvicorn` attempt hit `[Errno 10048]` — a stale V1-era uvicorn (PID 4516) still owned `127.0.0.1:8000`; killed via `taskkill //PID 4516 //F`, server restarted.
+  - `curl http://127.0.0.1:8000/widget/state` (no token) → **HTTP 401** `{"code":"UNAUTHORIZED","message":"Missing or invalid credentials","details":{}}`.
+  - `curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/widget/state` → **HTTP 200**:
+    ```json
+    {"generated_at":"2026-10-25T01:17:15.582008Z","mode":{"mode":"LOCKED_IN","started_at":"2026-10-25T00:12:45.008266Z","ended_at":null,"duration_min":64},"today_confirmations":{"WATER":2,"FOOD_CLEAN":3,"STRETCH":1,"POSTURE_RESET":1,"WALK":2},"quiet_moments_today":10,"goals_active":3,"oldest_goal_age_days":0,"directive_line":"A fresh page — notice one small thing worth keeping today.","directive_status":"FALLBACK","receipt_status":"GENERATED","receipt_stale":false}
+    ```
+    (Real V1 acceptance data in dev DB; shape matches `contracts_v2.md` §2 normative example exactly.)
+- **Discrepancies found:** none — docs, live code, and installed APIs agreed at every checked point.
+- **Limitations / unresolved:** none. Dev uvicorn left running on 8000 after the live check.
