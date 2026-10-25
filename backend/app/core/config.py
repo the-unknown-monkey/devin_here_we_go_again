@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     auth_token_pepper: str = ""
     user_timezone: str = "Asia/Kolkata"
     gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.5-flash"
     scheduler_enabled: bool = False
     log_level: str = "INFO"
 

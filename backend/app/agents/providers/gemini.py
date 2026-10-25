@@ -44,7 +44,7 @@ from app.schemas.contracts import DailyContext
 
 logger = logging.getLogger("hwga")
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.5-flash"
 _TIMEOUT_MS = 20_000
 _MAX_RETRIES = 2  # per contracts.md §4: at most 2 retries
 
@@ -135,7 +135,7 @@ class GeminiProvider:
                 response_mime_type="application/json",
                 response_json_schema=schema.model_json_schema(),
                 temperature=0.3,
-                max_output_tokens=1500,
+                max_output_tokens=8192,
             ),
         )
         text = response.text or ""

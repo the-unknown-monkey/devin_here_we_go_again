@@ -54,7 +54,10 @@ class RecapService:
 
     def _get_provider(self) -> NarrativeProvider:
         if self._provider is None:
-            self._provider = GeminiProvider(api_key=get_settings().gemini_api_key)
+            self._provider = GeminiProvider(
+                api_key=get_settings().gemini_api_key,
+                model=get_settings().gemini_model,
+            )
         return self._provider
 
     def _local_date(self, user: User, value: date | None) -> date:

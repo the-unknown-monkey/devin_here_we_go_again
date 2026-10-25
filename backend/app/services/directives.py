@@ -86,7 +86,10 @@ class DirectiveService:
 
     def _get_provider(self) -> NarrativeProvider:
         if self._provider is None:
-            self._provider = GeminiProvider(api_key=get_settings().gemini_api_key)
+            self._provider = GeminiProvider(
+                api_key=get_settings().gemini_api_key,
+                model=get_settings().gemini_model,
+            )
         return self._provider
 
     def get_or_generate_today(
