@@ -1,4 +1,5 @@
-"""Typed models — verbatim from docs/hwga/contracts.md §2 (LOCKED HWGA01)."""
+"""Typed models — verbatim from docs/hwga/contracts.md §2 (LOCKED HWGA01).
+V2 additions are verbatim from docs/hwga/v2/contracts_v2.md §1 (LOCKED V2A)."""
 
 from datetime import date, datetime
 from typing import List, Optional
@@ -97,3 +98,23 @@ class MorningDirective(BaseModel):
     source_recap_id: Optional[UUID] = None
     status: GenerationStatus
     shown_at: Optional[datetime] = None
+
+
+# --- V2 additions (contracts_v2.md §1, LOCKED V2A) ---
+
+
+class WidgetState(BaseModel):
+    """One lightweight read model for both home-screen widgets. Everything
+    on it is already computable from V1 contracts — this is a convenience
+    aggregate, not a new truth."""
+
+    generated_at: datetime
+    mode: Optional[ModeInterval] = None
+    today_confirmations: dict[ConfirmationKind, int] = Field(default_factory=dict)
+    quiet_moments_today: int = 0
+    goals_active: int = 0
+    oldest_goal_age_days: Optional[int] = None
+    directive_line: Optional[str] = None
+    directive_status: Optional[GenerationStatus] = None
+    receipt_status: Optional[GenerationStatus] = None
+    receipt_stale: bool = False
