@@ -21,7 +21,7 @@
 
 | Phase | Name | Status | Tests | Completion date | Git commit | Next |
 |---|---|---|---|---|---|---|
-| **V2A** | Decisions & contracts | [x] Completed | Docs + read-only probes only | 2026-10-25 | `<pending-step-1-hash>` | V2B |
+| **V2A** | Decisions & contracts | [x] Completed | Docs + read-only probes only | 2026-10-25 | `e5166db` | V2B |
 | **V2B** | Backend widget surface | [ ] Planned | | | | V2C |
 | **V2C** | Quick-taps widget | [ ] Planned | | | | V2D |
 | **V2D** | Mode + today hook widget | [ ] Planned | | | | V2E |
