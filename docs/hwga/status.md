@@ -4,7 +4,7 @@
 - **Remote:** `https://github.com/the-unknown-monkey/devin_here_we_go_again.git`
 - **Active Branch:** `main`
 - **Last inspected HEAD:** `599c43a` (`feat(hwga): implement morning directive and weekly recap chain (HWGA07)`)
-- **Overall Progress:** 8 / 9 V1 phases completed
+- **Overall Progress:** 9 / 9 V1 phases completed — **V1 ACCEPTED** on Nothing Phone 2a (2026-10-25)
 - **Ledger rule:** record evidence observed in this repository/machine only; do not copy reference-project evidence, pass counts, dates, credentials, or deployment state.
 
 ---
@@ -53,7 +53,7 @@
 | **HWGA05** | Sensory Moment Vault | [x] Completed | 15 passed, 0 failed (`cd backend && uv run pytest tests/test_media.py -q -ra`); full backend 55 passed; Flutter: format clean, `No issues found!`, 24 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `a066c41` | HWGA06 |
 | **HWGA06** | Nightly Receipt | [x] Completed | 20 passed, 0 failed (`cd backend && uv run pytest tests/test_daily_context.py tests/test_recap_workflow.py -q -ra`); full backend 75 passed; Flutter: format clean, `No issues found!`, 29 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `e126791` | HWGA07 |
 | **HWGA07** | Morning Directive & recap chain | [x] Completed | 22 passed, 0 failed (`cd backend && uv run pytest tests/test_directive.py tests/test_weekly_recap.py -q -ra`); full backend 97 passed; Flutter: format clean, `No issues found!`, 35 passed (`cd flutter && dart format --set-exit-if-changed lib test && flutter analyze && flutter test`) | 2026-10-25 | `599c43a` | HWGA08 |
-| **HWGA08** | Final V1 acceptance & phone demo | [~] In progress | Backend 97 passed; Flutter format/analyze clean, 35 passed; APK built+installed on A142 via ngrok tunnel; live Gemini receipt GENERATED | | | Done |
+| **HWGA08** | Final V1 acceptance & phone demo | [x] Completed | Backend 97 passed; Flutter format/analyze clean, 35 passed; APK built+installed; full device journey + ngrok gate + live GENERATED receipt verified; **user confirmed V1 acceptance** | 2026-10-25 | `9b4d1b5` + `6dd0d62` | Done |
 | **Post-V1** | Refinement & feature discovery | Deferred | | | | — |
 
 ## 3. Two-Step Commit Protocol
@@ -241,10 +241,10 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - Gemini path never executed live (no `GEMINI_API_KEY` in test env); all provider seams mocked — real-model quality verified only at HWGA08.
   - VOICE STT still not wired; APScheduler (D21) trigger still manual via `/internal/run/*`.
   - In-app directive card renders only on HomeScreen open — no FCM/push per D05.
-### Phase HWGA08: Final V1 Acceptance & Phone Demo — _in progress_
-- **Status:** [~] In progress (acceptance checks running; device journey partially verified by user screenshots)
+### Phase HWGA08: Final V1 Acceptance & Phone Demo
+- **Status:** [x] Completed — **V1 ACCEPTED (user-confirmed 2026-10-25)** on Nothing Phone 2a (A142, Android 15)
 - **Execution date:** 2026-10-25, Asia/Kolkata
-- **Commit:** `9b4d1b5` (`fix(hwga): resolve V1 acceptance findings in Android build and Gemini provider (HWGA08)`) — interim commit while device acceptance continues
+- **Commits:** `9b4d1b5` (`fix(hwga): resolve V1 acceptance findings in Android build and Gemini provider (HWGA08)`), `6dd0d62` (`docs(hwga): add verified V1 runbook (HWGA08)`)
 - **Test results:** backend `97 passed, 0 failed` (`uv run pytest tests -q -ra`); Flutter `dart format --set-exit-if-changed lib test` clean, `flutter analyze` → `No issues found!`, `flutter test` → `+35: All tests passed!`; `flutter build apk --debug` → built after fix below
 - **Commands run + observed output:**
   - `docker compose ps` → `backend-db-1` (127.0.0.1:55532) + `backend-db-test-1` (127.0.0.1:55533, tmpfs) healthy; test isolation confirmed (conftest pins TEST_DATABASE_URL + hard guard).
@@ -256,11 +256,14 @@ For each completed phase record: execution date/time + timezone, branch, startin
   - Phone journey over 5G via ngrok (user screenshots): token auth OK; baselines/mode/goals logged; photo + ambient 10s + voice captured into timeline; directive card `FALLBACK` "A simple nudge"; weekly screen `FALLBACK` "Fact recap" with honest "6 days have no receipt — unknown, and that's okay". One transient `HTTP 503` toast — not from the API (all backend requests 2xx/401/404); attributed to ngrok free-tier.
   - **Defect 2 — Gemini path:** running uvicorn kept the pre-key env (restart bind failure WinError 10048; fixed by killing the port owner). Then: `gemini-2.5-flash` (default) → 404 deprecated; `3.8`/`3.6` → 503 high-demand; `3.7` → 58s thinking-time > 20s timeout / gateway 504; **`gemini-3.5-flash` → 200 in ~9.8s** but `INVALID_OUTPUT` (MAX_TOKENS: thinking tokens consumed the 1500 cap) → raised `max_output_tokens` to 8192 → `STOP` + valid JSON. Added `GEMINI_MODEL` env (D25).
   - Live generation verified: `GET /recaps?period=DAILY` after backfill-marked-stale → **status GENERATED**, grounded narrative + 2 insights + 2 highlights. Weekly via real model → guard rejected candidate (`weekly_narrative_contains_unsupported_claims`) → deterministic FALLBACK persisted — guardrail working as designed on live output. Directive stays FALLBACK (generated pre-key; per contract it never regenerates same-day).
-- **Limitations / unresolved:**
-  - Phone journey manual confirmation still in progress (goals cap/complete, media delete, offline/retry, text scaling to be verified with user).
-  - One transient ngrok 503 observed (free tier).
-  - Weekly recap remains FALLBACK by guard rejection; directive remains FALLBACK by design.
-  - `gemini-3.5-flash` chosen; demand/deprecation of free-tier models remains a live external risk (now overridable via `GEMINI_MODEL`).
+- **Manual device acceptance (user-confirmed 2026-10-25):** receipt shows GENERATED Gemini narrative; 4th-goal cap rejection works; goal complete/retire works; media delete works; airplane-mode error/retry and recovery work; larger system font scales readably.
+- **Limitations / unresolved (accepted):**
+  - One transient ngrok 503 observed (free tier); app recovered.
+  - Weekly recap remains FALLBACK — live Gemini output was rejected by the chain guard (`weekly_narrative_contains_unsupported_claims`); deterministic fallback persisted per contract.
+  - Directive remains FALLBACK — generated before the Gemini key existed; contract forbids same-day regeneration.
+  - `gemini-3.5-flash` chosen; free-tier model deprecation/demand remains an external risk, now overridable via `GEMINI_MODEL`.
+  - `adb reverse` fragility (drops on reconnect) documented in runbook; ngrok demo path is the robust alternative.
+- **V1 ACCEPTANCE DECISION: ACCEPTED** — user explicitly confirmed on 2026-10-25 after the full matrix + device journey + ngrok gate.
 <!-- Evidence entry template:
 ### Phase HWGAnn: <name>
 - **Status:** [x] Completed / [ ] Blocked
